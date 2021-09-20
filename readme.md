@@ -15,7 +15,11 @@
              <param name="map_topic" value="/$(arg first_robot)/map"/>
              <param name="robot_frame" value="/$(arg first_robot)/base_link"/>
            </node>
-           
+         
+ Topic published for the local RRT
+ - /detected_points
+ - /robot_namespace+"_shapes" (** for visualization purposes)
+         
 ## Server Side Installation
 1. Download RRT folder into the WS environment
 
