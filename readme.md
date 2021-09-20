@@ -1,6 +1,6 @@
 # Installation guide for the Jackal Exploration
 
-## jackal setup for the local RRT
+## jackal setup for the local RRT (for each jackal)
 1. Download the RRT folders and files, and place them into the catkin_ws directory
 
         $ git clone git@github.com:hikashi/single_robot_rrt.git
