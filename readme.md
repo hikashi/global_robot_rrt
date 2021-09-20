@@ -26,7 +26,14 @@
         roslaunch rrt_exploration duo_jackal_exploration.launch 
 
 3. click the 4 points to start exploration.
-
+        ![Instruction](/instruction2.png)
+        
+        The exploration relies on the correct sequence else rendering with no goal for each of the robot.
+        1. Top Left
+        2. Bottom Left
+        3. Bottom Right
+        4. Top Right
+        5. Initial Point
 
 ## Things to notice
 - pending....
