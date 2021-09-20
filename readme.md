@@ -36,4 +36,6 @@
         5. Initial Point
 
 ## Things to notice
-- pending....
+- allow the topics within the multimaster (detected_points).
+- add some of the marker topic sent by the individual robot.
+- visualization of the RRT at the RVIZ before executing the actual RRT exploration.
