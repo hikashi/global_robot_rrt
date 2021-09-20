@@ -21,11 +21,16 @@
 
         git clone git@github.com:hikashi/global_robot_rrt.git
 
-2. run the launch file
+2. modify the parameters of the launch file.
+
+        duo_jackal_exploration.launch
+        
+3. run the launch file
         
         roslaunch rrt_exploration duo_jackal_exploration.launch 
 
-3. click the 4 points to start exploration.
+
+4. click the 4 points to start exploration.
         ![Instruction](/instruction2.png)
         
         The exploration relies on the correct sequence else rendering with no goal for each of the robot.
