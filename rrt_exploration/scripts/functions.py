@@ -22,13 +22,13 @@ class robot:
         # rospy.get_param('~robot_frame', 'base_link')
         # rospy.get_param('~global_frame', '/map')
     def __init__(self, name, move_base_service, plan_service, global_frame, base_link):
-        rospy.loginfo('setting up robot init for robot - ' + name)	
+        rospy.loginfo('setting up robot init for robot - ' + name)
         self.assigned_point = []
         self.goal_history = []
         self.name = name
-        
+
         self.global_frame = rospy.get_param('~global_frame', global_frame)
-        self.robot_frame = rospy.get_param('~robot_frame', base_link)
+        self.robot_frame = rospy.get_param('~robot_frame', "map")
         self.plan_service =  rospy.get_param('~plan_service', plan_service)
         self.listener = tf.TransformListener()
         self.listener.waitForTransform(
@@ -47,7 +47,7 @@ class robot:
         self.client = actionlib.SimpleActionClient(
             self.name+move_base_service, MoveBaseAction)
         self.client.wait_for_server()
-        robot.goal.target_pose.header.frame_id = self.global_frame
+        robot.goal.target_pose.header.frame_id = self.name + "/" + self.robot_frame # self.global_frame
         robot.goal.target_pose.header.stamp = rospy.Time.now()
 
         rospy.wait_for_service(self.name+self.plan_service)
@@ -67,7 +67,7 @@ class robot:
                 cond == 0
         self.position = array([trans[0], trans[1]])
         return self.position
-    
+
     def transformPointToRobotFrame(self, point):
         point = PoseStamped()
         point.header.frame_id = self.global_frame
@@ -95,8 +95,8 @@ class robot:
         # robot.goal.target_pose.pose.orientation.w = 1.0
         point = self.getPosition()
         robot.goal.target_pose.pose.position.x = point[0]
-        robot.goal.target_pose.pose.position.y = [1]
-        robot.goal.target_pose.pose.orientation.w point= 1.0
+        robot.goal.target_pose.pose.position.y = point[1]
+        robot.goal.target_pose.pose.orientation.w = 1.0
         self.client.send_goal(robot.goal)
         self.assigned_point = array(point)
 
@@ -114,10 +114,10 @@ class robot:
         plan = self.make_plan(start=start, goal=end, tolerance=0.03)
         # tolerance should be defined in meter as according to the data, first try 0.04
         return plan.plan.poses
-    
+
     def getGoalHistory(self):
         return self.goal_history
-            
+
 # ________________________________________________________________________________
 
 
@@ -192,7 +192,7 @@ def calcDynamicTimeThreshold(curr_pos, goal_pos, time_per_meter):
         return int(time_per_meter * dist1)
     else:
         return int(time_per_meter * 15.0)
-    
+
 
 # ________________________________________________________________________________
 def pathCost(path):
@@ -295,7 +295,7 @@ def checkSurroundingWall(mapData, Xp, dist_check):
     for i in range(0, len(pointList)):
         randomNumber1 = ((random.randint(-100, 100))/100.0)*dist_check
         randomNumber2 = ((random.randint(-100, 100))/100.0)*dist_check
-    
+
         index = (floor((pointList[i][1]+randomNumber1-Xstarty)/resolution)*width) + \
             (floor((pointList[i][0]+randomNumber2-Xstartx)/resolution))
         if int(index) < len(Data):
