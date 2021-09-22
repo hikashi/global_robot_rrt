@@ -67,10 +67,21 @@ class robot:
                 cond == 0
         self.position = array([trans[0], trans[1]])
         return self.position
+    
+    def transformPointToRobotFrame(self, point):
+        point = PoseStamped()
+        point.header.frame_id = self.global_frame
+        point.pose.orientation.w = 1.0
+        point.pose.orientation.x = point[0]
+        point.pose.orientation.y = point[1]
+        position = self.listener.transformPose(self.name +'/'+ self.robot_frame, point)
+        return position
+
 
     def sendGoal(self, point):
-        robot.goal.target_pose.pose.position.x = point[0]
-        robot.goal.target_pose.pose.position.y = point[1]
+        transform_point = self.transformPointToRobotFrame(point)
+        robot.goal.target_pose.pose.position.x = transform_point[0]
+        robot.goal.target_pose.pose.position.y = transform_point[1]
         robot.goal.target_pose.pose.orientation.w = 1.0
         # print('robot: %s  x: %f y: %f' %(self.name, point[0],point[1]))
         self.client.send_goal(robot.goal)
@@ -84,8 +95,8 @@ class robot:
         # robot.goal.target_pose.pose.orientation.w = 1.0
         point = self.getPosition()
         robot.goal.target_pose.pose.position.x = point[0]
-        robot.goal.target_pose.pose.position.y = point[1]
-        robot.goal.target_pose.pose.orientation.w = 1.0
+        robot.goal.target_pose.pose.position.y = [1]
+        robot.goal.target_pose.pose.orientation.w point= 1.0
         self.client.send_goal(robot.goal)
         self.assigned_point = array(point)
 
