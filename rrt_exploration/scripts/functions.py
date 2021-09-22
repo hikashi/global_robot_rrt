@@ -64,19 +64,26 @@ class robot:
                     self.global_frame, self.name+'/'+self.robot_frame, rospy.Time(0))
                 cond = 1
             except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
-                cond == 0
+                cond = 0
         self.position = array([trans[0], trans[1]])
         return self.position
 
-    def transformPointToRobotFrame(self, point):
-        point = PoseStamped()
-        point.header.frame_id = self.global_frame
-        point.pose.orientation.w = 1.0
-        point.pose.orientation.x = point[0]
-        point.pose.orientation.y = point[1]
-        position = self.listener.transformPose(self.name +'/'+ self.robot_frame, point)
-        return position
+    def transformPointToRobotFrame(self, trans):
+        while not rospy.is_shutdown():
+            try:
+                point = PoseStamped()
+                t = self.listener.getLatestCommonTime(self.name + '/' + self.robot_frame, self.global_frame)
+                point.header.frame_id = self.global_frame
 
+                point.pose.position.x = trans[0]
+                point.pose.position.y = trans[1]
+
+                point.pose.orientation.w = 1.0
+
+                transformed = self.listener.transformPose(self.name + '/' + self.robot_frame, point)
+                return (transformed.pose.position.x, transformed.pose.position.y)
+            except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
+                pass
 
     def sendGoal(self, point):
         transform_point = self.transformPointToRobotFrame(point)
