@@ -186,13 +186,12 @@ def node():
 		else:
 			rospy.loginfo("- no idling robots detected, status update -")
 			for ih in range(0, len(robot_namelist)):
-				if robot_assigned_goal[ih]['time_thres'] == -1:
-					currTime = rospy.get_rostime().secs
-					timeRemaining = (robot_assigned_goal[ih]['time_start'] + robot_assigned_goal[ih]['time_thres']) - currTime
-					rospy.loginfo("robot " + robot_namelist[ih] + " working on goal (" + str(robot_assigned_goal[ih]['goal']) 
-					+ ") - remaining time: " + str(timeRemaining) + "s")
-					print("robot: %d    start: %d    time_thres: %d     current time: %d   time remain:%d" \
-						 %(ih,robot_assigned_goal[ih]['time_start'], robot_assigned_goal[ih]['time_thres'], currTime,timeRemaining))
+				currTime = rospy.get_rostime().secs
+				timeRemaining = (robot_assigned_goal[ih]['time_start'] + robot_assigned_goal[ih]['time_thres']) - currTime
+				rospy.loginfo("robot " + robot_namelist[ih] + " working on goal:" + str(robot_assigned_goal[ih]['goal']) 
+				+ " -remaining time: " + str(int(timeRemaining)) + "s")
+				# print("robot: %d    start: %d    time_thres: %d     current time: %d   time remain:%d" \
+				# 		%(ih,robot_assigned_goal[ih]['time_start'], robot_assigned_goal[ih]['time_thres'], currTime,timeRemaining))
 				# rospy.sleep(0.9)
 
 			
@@ -269,10 +268,12 @@ def node():
 				# cancel goal
 				rospy.loginfo(" !!!!!!! > Robot " + robot_namelist[ix] + " give up goal: " + str(robot_assigned_goal[ix]['goal']))
 				robots[ix].cancelGoal()
-
-		rospy.loginfo('publishing invalid goals :' + str(temp_inv_array))
-		invPub.publish(invalid_goal_array)
+		# wont print so frequent
+		if rospy.get_rostime().secs >= next_assign_time:
+			rospy.loginfo('publishing invalid goals :' + str(temp_inv_array))
+		
 		# publish invalid location for the points
+		invPub.publish(invalid_goal_array)
 		points.points = copy(invalid_goal_array.points)
 		invCenPub.publish(points)
 
