@@ -8,7 +8,7 @@ from geometry_msgs.msg import Point
 from nav_msgs.msg import OccupancyGrid
 from geometry_msgs.msg import PointStamped
 import tf
-from numpy import array, vstack, delete
+from numpy import array, vstack, delete, round
 from functions import gridValue, informationGain, checkSurroundingWall
 from sklearn.cluster import MeanShift
 from rrt_exploration.msg import PointArray, invalidArray
@@ -120,7 +120,6 @@ def node():
     # wait if no frontier is received yet
     while len(frontiers) < 1:
         pass
-        # rospy.loginfo("no frontier")
 
     points = Marker()
     points_clust = Marker()
@@ -198,7 +197,6 @@ def node():
             ms.fit(front)
             centroids = ms.cluster_centers_  # centroids array is the centers of each cluster
 
-            # rospy.loginfo('clustering')
         # if there is only one frontier no need for clustering, i.e. centroids=frontiers
         if len(front) == 1:
             centroids = front
@@ -220,47 +218,28 @@ def node():
                     globalmaps[i].header.frame_id, temppoint)
                 x = array([transformedPoint.point.x, transformedPoint.point.y])
 
-                if len(invalidFrontier) > 0:
-                    # print('----yyyyy-----')
-                    # print(centroids[z])
-                    # print(x)
-                    # if x in invalidFrontier:
-                    #     print(transformedPoint.point)
-                    #     print(invalidFrontier)
-                    cond_wall = checkSurroundingWall(globalmaps[i], x, 0.3)
-                    # print(cond_wall)
-                    # print('old frontier')
                 cond1 = (gridValue(globalmaps[i], x) > threshold) or cond1
-                # rospy.loginfo('clearing old frontiers- cond1')
                 for j in range(0, len(invalidFrontier)):
                     if transformedPoint.point.x == invalidFrontier[j][0] and transformedPoint.point.y == invalidFrontier[j][1]:
                         cond2 = True
-                        # print('ya cond2 set to true')
-                    # rospy.loginfo('clearing old frontiers- cond2')
-            # print("-------------------------------")
-            # print((cond1 or cond2 or (informationGain(mapData, [centroids[z][0], centroids[z][1]], info_radius*0.5)) < 0.2))
-            # print(invalidFrontier)
             infoGain = informationGain(mapData, [centroids[z][0], centroids[z][1]], info_radius*0.5)
-            # if infoGain >= 0.2:
-            #     print('>>>>> [%f,%f] - gain: %.4f' %(temppoint.point.x, temppoint.point.y, infoGain))
             if (cond1 or cond2 or infoGain < 0.2):
                 centroids = delete(centroids, (z), axis=0)
-                # if cond2:
-                    # print('deleted the frontier list')
-                # rospy.loginfo('clearing old frontiers - cpmbined')
                 z = z-1 
             z += 1
+        # rospy.loginfo("Filtered: %d invalid frontiers " %(z))	
 # -------------------------------------------------------------------------
-        for ii in range(0, len(centroids)):
-            for jj in range(0, len(invalidFrontier)):
-                if invalidFrontier[jj][0] == centroids[ii][0] and invalidFrontier[jj][1] == centroids[ii][1]:
-                    print("!!!!!! invalid point detected -- [%f,%f]" %(centroids[ii][0], centroids[ii][1]))
 # publishing
         arraypoints.points = []
-        for i in centroids:
-            tempPoint.x = i[0]
-            tempPoint.y = i[1]
-            arraypoints.points.append(copy(tempPoint))
+        for i in range(0, len(centroids)):
+            invalidPts = False
+            for j in range(0, len(invalidFrontier)):
+                if invalidFrontier[j][0] == centroids[i][0] and invalidFrontier[j][1] == centroids[i][1]:
+                    invalidPts = True
+            if not invalidPts:
+                tempPoint.x = round(centroids[i][0],3)
+                tempPoint.y = round(centroids[i][1],3)
+                arraypoints.points.append(copy(tempPoint))
         filterpub.publish(arraypoints)
         # rospy.loginfo('publish the Point array')
         pp = []
