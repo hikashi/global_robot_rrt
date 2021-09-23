@@ -237,8 +237,8 @@ def node():
                 if invalidFrontier[j][0] == centroids[i][0] and invalidFrontier[j][1] == centroids[i][1]:
                     invalidPts = True
             if not invalidPts:
-                tempPoint.x = round(centroids[i][0],3)
-                tempPoint.y = round(centroids[i][1],3)
+                tempPoint.x = round(centroids[i][0],2)
+                tempPoint.y = round(centroids[i][1],2)
                 arraypoints.points.append(copy(tempPoint))
         filterpub.publish(arraypoints)
         # rospy.loginfo('publish the Point array')
