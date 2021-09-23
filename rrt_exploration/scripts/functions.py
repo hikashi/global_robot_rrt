@@ -266,7 +266,17 @@ def gridValue(mapData, Xp):
     index = (floor((Xp[1]-Xstarty)/resolution)*width) + \
         (floor((Xp[0]-Xstartx)/resolution))
     if int(index) < len(Data):
-        return Data[int(index)]
+        dataList = []
+        dataList.append(Data[int(index)])
+        if int(index)+1 < len(Data):
+            dataList.append(Data[int(index)+1])
+        if int(index)+width < len(Data):
+            dataList.append(Data[int(index)+width])
+        if int(index)-1 > 0:
+            dataList.append(Data[int(index)-1])
+        if int(index)-width > 0:
+            dataList.append(Data[int(index)-width])
+        return np.max(dataList)
     else:
         return 100
 
