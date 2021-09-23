@@ -21,7 +21,7 @@
   <arg name="hysteresis_radius" value="3.0"/>
   <arg name="hysteresis_gain" value="2.0"/>
   <arg name="costmap_clearing_threshold" value="60"/>
-  <arg name="delay_after_assignement" value="2.8"/>
+  <arg name="delay_after_assignement" value="2.0"/>
   <arg name="goal_time_thres" value="12"/>
   <arg name="frequency" value="50"/>
   <arg name="detected_frontier" value="/detected_points"/>
