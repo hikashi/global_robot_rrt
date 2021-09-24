@@ -40,15 +40,15 @@ def node():
 	# global frontiers,mapData,globalmaps,invalidFrontier
 	global frontiers,mapData,global1,global2,global3,globalmaps,invalidFrontier
 	rospy.init_node('assigner', anonymous=False)
-	
+
 	# fetching all parameters
 	map_topic= rospy.get_param('~map_topic','/map')
 	info_radius= rospy.get_param('~info_radius',1.0)					#this can be smaller than the laser scanner range, >> smaller >>less computation time>> too small is not good, info gain won't be accurate
-	info_multiplier=rospy.get_param('~info_multiplier',3.0)		
+	info_multiplier=rospy.get_param('~info_multiplier',3.0)
 	hysteresis_radius=rospy.get_param('~hysteresis_radius',3.0)			#at least as much as the laser scanner range
 	hysteresis_gain=rospy.get_param('~hysteresis_gain',2.0)				#bigger than 1 (biase robot to continue exploring current region
-	frontiers_topic= rospy.get_param('~frontiers_topic','/filtered_points')	
-	inv_frontier_topic= rospy.get_param('~invalid_frontier','/invalid_points')	
+	frontiers_topic= rospy.get_param('~frontiers_topic','/filtered_points')
+	inv_frontier_topic= rospy.get_param('~invalid_frontier','/invalid_points')
 	time_per_meter  = rospy.get_param('~time_per_meter',12)
 	robot_namelist = rospy.get_param('~robot_namelist', "robot1")
 	delay_after_assignement=rospy.get_param('~delay_after_assignement',0.5)
@@ -70,10 +70,10 @@ def node():
 	start_time = rospy.get_rostime().secs
 	robot_assigned_goal = []
 
-# wait if no frontier is received yet 
+# wait if no frontier is received yet
 	while len(frontiers)<1:
 		pass
-	centroids=copy(frontiers)	
+	centroids=copy(frontiers)
 #wait if map is not received yet
 	while (len(mapData.data)<1):
 		pass
@@ -85,7 +85,7 @@ def node():
 			robots.append(robot(robot_namelist[i],move_base_service=move_base_service,plan_service=plan_service,global_frame=global_frame,base_link=base_link))
 
 	for i in range(0,len(robot_namelist)):
-		rospy.loginfo('setting initial position for robot: %s' %(robot_namelist[i]))	
+		rospy.loginfo('setting initial position for robot: %s' %(robot_namelist[i]))
 		robots[i].sendGoal(robots[i].getPosition())
 		robot_assigned_goal.append({'robot_id':i, 'goal':robots[i].getPosition(), 'startLoc':robots[i].getPosition(),
 		 'time_start':start_time, 'valid':True, 'time_thres':-1})
@@ -120,13 +120,13 @@ def node():
 	temp_inv_array = []
 	next_assign_time = rospy.get_rostime().secs
 	while not rospy.is_shutdown():
-		centroids=copy(frontiers)	
-#-------------------------------------------------------------------------			
+		centroids=copy(frontiers)
+#-------------------------------------------------------------------------
 #Get information gain for each frontier point
 		infoGain=[]
 		for ip in range(0,len(centroids)):
 			infoGain.append(informationGain(mapData,[centroids[ip][0],centroids[ip][1]],info_radius))
-#-------------------------------------------------------------------------			
+#-------------------------------------------------------------------------
 #get number of available/busy robots
 		na=[] #available robots
 		nb=[] #busy robots
@@ -134,20 +134,20 @@ def node():
 			if (robots[i].getState()==1):
 				nb.append(i)
 			else:
-				na.append(i)	
-		rospy.loginfo("available robots: "+str(na))	
-#------------------------------------------------------------------------- 
+				na.append(i)
+		rospy.loginfo("available robots: "+str(na))
+#-------------------------------------------------------------------------
 #get dicount and update informationGain
 		for i in nb+na:
 			infoGain=discount(mapData,robots[i].assigned_point,centroids,infoGain,info_radius)
-#-------------------------------------------------------------------------            
+#-------------------------------------------------------------------------
 		revenue_record=[]
 		centroid_record=[]
 		id_record=[]
-		
+
 		for ir in na:
 			for ip in range(0,len(centroids)):
-				cost=norm(robots[ir].getPosition()-centroids[ip])		
+				cost=norm(robots[ir].getPosition()-centroids[ip])
 				threshold=1
 				information_gain=infoGain[ip]
 				if (norm(robots[ir].getPosition()-centroids[ip])<=hysteresis_radius):
@@ -157,19 +157,19 @@ def node():
 				revenue_record.append(revenue)
 				centroid_record.append(centroids[ip])
 				id_record.append(ir)
-		
+
 		if len(na)<1:
 			revenue_record=[]
 			centroid_record=[]
 			id_record=[]
 			for ir in nb:
 				for ip in range(0,len(centroids)):
-					cost=norm(robots[ir].getPosition()-centroids[ip])		
+					cost=norm(robots[ir].getPosition()-centroids[ip])
 					threshold=1
 					information_gain=infoGain[ip]
 					if (norm(robots[ir].getPosition()-centroids[ip])<=hysteresis_radius):
 						information_gain*=hysteresis_gain
-				
+
 					if ((norm(centroids[ip]-robots[ir].assigned_point))<hysteresis_radius):
 						information_gain=informationGain(mapData,[centroids[ip][0],centroids[ip][1]],info_radius)*hysteresis_gain
 
@@ -177,34 +177,34 @@ def node():
 					revenue_record.append(revenue)
 					centroid_record.append(centroids[ip])
 					id_record.append(ir)
-		
-		# rospy.loginfo("available robots: "+str(na))	
+
+		# rospy.loginfo("available robots: "+str(na))
 		if len(na) >= 1:
-			rospy.loginfo("revenue record: "+str(revenue_record))	
-			rospy.loginfo("centroid record: "+str(centroid_record))	
-			rospy.loginfo("robot IDs record: "+str(id_record))	
+			rospy.loginfo("revenue record: "+str(revenue_record))
+			rospy.loginfo("centroid record: "+str(centroid_record))
+			rospy.loginfo("robot IDs record: "+str(id_record))
 		else:
 			rospy.loginfo("- no idling robots detected, status update -")
 			for ih in range(0, len(robot_namelist)):
 				currTime = rospy.get_rostime().secs
 				timeRemaining = (robot_assigned_goal[ih]['time_start'] + robot_assigned_goal[ih]['time_thres']) - currTime
-				rospy.loginfo("robot " + robot_namelist[ih] + " working on goal:" + str(robot_assigned_goal[ih]['goal']) 
+				rospy.loginfo("robot " + robot_namelist[ih] + " working on goal:" + str(robot_assigned_goal[ih]['goal'])
 				+ " -remaining time: " + str(int(timeRemaining)) + "s")
 				# print("robot: %d    start: %d    time_thres: %d     current time: %d   time remain:%d" \
 				# 		%(ih,robot_assigned_goal[ih]['time_start'], robot_assigned_goal[ih]['time_thres'], currTime,timeRemaining))
 				# rospy.sleep(0.9)
 
-			
-#-------------------------------------------------------------------------	
+
+#-------------------------------------------------------------------------
 		if (len(id_record)>0):
 			winner_id=revenue_record.index(max(revenue_record))
 			# check if the goal is the same or not same
 			cond_goal = True
 			if robot_assigned_goal[id_record[winner_id]]['valid'] == True:
-				history = robots[id_record[winner_id]].getGoalHistory()	
+				history = robots[id_record[winner_id]].getGoalHistory()
 				for i in range(0, len(history)):
 					if abs(history[i][0] - centroid_record[winner_id][0]) < 0.000000001 and abs(history[i][1] - centroid_record[winner_id][1]) < 0.000000001:
-						cond_goal = False	
+						cond_goal = False
 						print(">> Goal repeated in robot history")
 						# robots[id_record[winner_id]].cancelGoal()
 						break
@@ -215,7 +215,7 @@ def node():
 						# robots[id_record[winner_id]].cancelGoal()
 						break
 			currTime = rospy.get_rostime().secs
-			
+
 			if cond_goal and rospy.get_rostime().secs >= next_assign_time:
 				robots[id_record[winner_id]].sendGoal(centroid_record[winner_id])
 				robot_assigned_goal[id_record[winner_id]]['goal']       = centroid_record[winner_id]
@@ -223,14 +223,14 @@ def node():
 				robot_assigned_goal[id_record[winner_id]]['time_start'] = rospy.get_rostime().secs
 				robot_assigned_goal[id_record[winner_id]]['valid']      = True
 				robot_assigned_goal[id_record[winner_id]]['time_thres'] = calcDynamicTimeThreshold(robots[id_record[winner_id]].getPosition(), centroid_record[winner_id], time_per_meter)
-				rospy.loginfo(robot_namelist[id_record[winner_id]] + " has been assigned to  "+str(centroid_record[winner_id]) + 	
-				" mission start at " + str(robot_assigned_goal[id_record[winner_id]]['time_start']) + " sec  - Limit: " + str(robot_assigned_goal[id_record[winner_id]]['time_thres']) + "s") 
+				rospy.loginfo(robot_namelist[id_record[winner_id]] + " has been assigned to  "+str(centroid_record[winner_id]) +
+				" mission start at " + str(robot_assigned_goal[id_record[winner_id]]['time_start']) + " sec  - Limit: " + str(robot_assigned_goal[id_record[winner_id]]['time_thres']) + "s")
 				# rospy.sleep(delay_after_assignement)
 				next_assign_time = rospy.get_rostime().secs + delay_after_assignement
-		
+
 		invalid_goal_array = invalidArray()
 		invalid_goal_array.points = []
-		
+
 		for iz in range(0,len(invalidFrontier)):
 			tempPoint = Point()
 			tempPoint.z = 0.0
@@ -242,7 +242,7 @@ def node():
 			currTime = rospy.get_rostime().secs
 			# remainTime = ((robot_assigned_goal[ix]['time_start'] + robot_assigned_goal[ix]['time_thres']) - currTime)
 			# print("@@@ start: %d    time_thres: %d     current time: %d  remainTime: %d" %(robot_assigned_goal[ix]['time_start'], robot_assigned_goal[ix]['time_thres'], currTime,remainTime))
-			if (((robot_assigned_goal[ix]['time_start'] + robot_assigned_goal[ix]['time_thres']) - currTime) <= 0) and robot_assigned_goal[ix]['time_thres'] != -1:		
+			if (((robot_assigned_goal[ix]['time_start'] + robot_assigned_goal[ix]['time_thres']) - currTime) <= 0) and robot_assigned_goal[ix]['time_thres'] != -1:
 				distance = calculateLocationDistance(robots[ix].getPosition(), robot_assigned_goal[ix]['goal'])
 				repeatInvalid = False
 				for ie in range(0,len(invalidFrontier)):
@@ -250,13 +250,13 @@ def node():
 						repeatInvalid = True
 				if repeatInvalid == False:
 					tempInvGoal = Point()
-					tempInvGoal.x = robot_assigned_goal[ix]['goal'][0]				
-					tempInvGoal.y = robot_assigned_goal[ix]['goal'][1]	
-					invalidFrontier.append(robot_assigned_goal[ix]['goal'])		
-					tempInvGoal.z = 0.0	
+					tempInvGoal.x = robot_assigned_goal[ix]['goal'][0]
+					tempInvGoal.y = robot_assigned_goal[ix]['goal'][1]
+					invalidFrontier.append(robot_assigned_goal[ix]['goal'])
+					tempInvGoal.z = 0.0
 					invalid_goal_array.points.append(copy(tempInvGoal))
 					temp_inv_array.append(robot_assigned_goal[ix]['goal'])
-					rospy.loginfo(" !!!!! > Robot " + robot_namelist[ix] + " give up goal: " + str(robot_assigned_goal[ix]['goal']) 
+					rospy.loginfo(" !!!!! > Robot " + robot_namelist[ix] + " give up goal: " + str(robot_assigned_goal[ix]['goal'])
 					+ " at time: "  + str(currTime) + " sec  -- distance: " + str(distance))
 
 				# need to reset the assigned tasks to the robot
@@ -271,14 +271,14 @@ def node():
 		# wont print so frequent
 		if rospy.get_rostime().secs >= next_assign_time:
 			rospy.loginfo('publishing invalid goals :' + str(temp_inv_array))
-		
+
 		# publish invalid location for the points
 		invPub.publish(invalid_goal_array)
 		points.points = copy(invalid_goal_array.points)
 		invCenPub.publish(points)
 
 
-#------------------------------------------------------------------------- 
+#-------------------------------------------------------------------------
 		rate.sleep()
 #-------------------------------------------------------------------------
 
@@ -287,7 +287,3 @@ if __name__ == '__main__':
         node()
     except rospy.ROSInterruptException:
         pass
- 
- 
- 
- 

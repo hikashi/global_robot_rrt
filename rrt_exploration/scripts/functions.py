@@ -14,9 +14,6 @@ import random
 
 
 class robot:
-    goal = MoveBaseGoal()
-    start = PoseStamped()
-    end = PoseStamped()
         # rospy.get_param(
         #     '~plan_service', '/'+self.movebase_prefix+'/NavfnROS/make_plan')
         # rospy.get_param('~robot_frame', 'base_link')
@@ -26,6 +23,11 @@ class robot:
         self.assigned_point = []
         self.goal_history = []
         self.name = name
+
+        self.goal = MoveBaseGoal()
+        self.start = PoseStamped()
+        self.end = PoseStamped()
+
 
         self.global_frame = rospy.get_param('~global_frame', global_frame)
         self.robot_frame = rospy.get_param('~robot_frame', "map")
@@ -40,6 +42,7 @@ class robot:
                 (trans, rot) = self.listener.lookupTransform(
                     self.global_frame, self.name+'/'+self.robot_frame, rospy.Time(0))
                 cond = 1
+                print()
             except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
                 cond == 0
         self.position = array([trans[0], trans[1]])
@@ -47,14 +50,14 @@ class robot:
         self.client = actionlib.SimpleActionClient(
             self.name+move_base_service, MoveBaseAction)
         self.client.wait_for_server()
-        robot.goal.target_pose.header.frame_id = self.name + "/" + self.robot_frame # self.global_frame
-        robot.goal.target_pose.header.stamp = rospy.Time.now()
+        self.goal.target_pose.header.frame_id = self.name + "/" + self.robot_frame # self.global_frame
+        self.goal.target_pose.header.stamp = rospy.Time.now()
 
         rospy.wait_for_service(self.name+self.plan_service)
         self.make_plan = rospy.ServiceProxy(
             self.name+self.plan_service, GetPlan)
-        robot.start.header.frame_id = self.global_frame
-        robot.end.header.frame_id = self.global_frame
+        self.start.header.frame_id = self.global_frame
+        self.end.header.frame_id = self.global_frame
 
     def getPosition(self):
         cond = 0
@@ -87,36 +90,36 @@ class robot:
 
     def sendGoal(self, point):
         transform_point = self.transformPointToRobotFrame(point)
-        robot.goal.target_pose.pose.position.x = transform_point[0]
-        robot.goal.target_pose.pose.position.y = transform_point[1]
-        robot.goal.target_pose.pose.orientation.w = 1.0
+        self.goal.target_pose.pose.position.x = transform_point[0]
+        self.goal.target_pose.pose.position.y = transform_point[1]
+        self.goal.target_pose.pose.orientation.w = 1.0
         # print('robot: %s  x: %f y: %f' %(self.name, point[0],point[1]))
-        self.client.send_goal(robot.goal)
+        self.client.send_goal(self.goal)
         self.goal_history.append(array(point))
         self.assigned_point = array(point)
 
     def cancelGoal(self):
         # self.client.cancel_goal()
-        # robot.goal.target_pose.pose.position.x = point[0]
-        # robot.goal.target_pose.pose.position.y = point[1]
-        # robot.goal.target_pose.pose.orientation.w = 1.0
+        # self.goal.target_pose.pose.position.x = point[0]
+        # self.goal.target_pose.pose.position.y = point[1]
+        # self.goal.target_pose.pose.orientation.w = 1.0
         point = self.getPosition()
-        robot.goal.target_pose.pose.position.x = point[0]
-        robot.goal.target_pose.pose.position.y = point[1]
-        robot.goal.target_pose.pose.orientation.w = 1.0
-        self.client.send_goal(robot.goal)
+        self.goal.target_pose.pose.position.x = point[0]
+        self.goal.target_pose.pose.position.y = point[1]
+        self.goal.target_pose.pose.orientation.w = 1.0
+        self.client.send_goal(self.goal)
         self.assigned_point = array(point)
 
     def getState(self):
         return self.client.get_state()
 
     def makePlan(self, start, end):
-        robot.start.pose.position.x = start[0]
-        robot.start.pose.position.y = start[1]
-        robot.end.pose.position.x = end[0]
-        robot.end.pose.position.y = end[1]
-        start = self.listener.transformPose(self.name+'/map', robot.start)
-        end = self.listener.transformPose(self.name+'/map', robot.end)
+        self.start.pose.position.x = start[0]
+        self.start.pose.position.y = start[1]
+        self.end.pose.position.x = end[0]
+        self.end.pose.position.y = end[1]
+        start = self.listener.transformPose(self.name+'/map', self.start)
+        end = self.listener.transformPose(self.name+'/map', self.end)
         # plan = self.make_plan(start=start, goal=end, tolerance=0.0)
         plan = self.make_plan(start=start, goal=end, tolerance=0.03)
         # tolerance should be defined in meter as according to the data, first try 0.04
