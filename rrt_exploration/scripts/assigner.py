@@ -217,7 +217,8 @@ def node():
 			currTime = rospy.get_rostime().secs
 
 			if cond_goal and rospy.get_rostime().secs >= next_assign_time:
-				robots[id_record[winner_id]].sendGoalTransformed(centroid_record[winner_id])
+# 				robots[id_record[winner_id]].sendGoalTransformed(centroid_record[winner_id])
+				robots[id_record[winner_id]].sendGoal(centroid_record[winner_id])
 				robot_assigned_goal[id_record[winner_id]]['goal']       = centroid_record[winner_id]
 				robot_assigned_goal[id_record[winner_id]]['startLoc']   = robots[id_record[winner_id]].getPosition()
 				robot_assigned_goal[id_record[winner_id]]['time_start'] = rospy.get_rostime().secs
