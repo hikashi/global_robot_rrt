@@ -22,9 +22,10 @@ invalidFrontier=[]
 
 
 def callBack(data, args):
-    global frontiers, min_distance
+    global frontiers
 #     transformedPoint = args[0].transformPoint(args[1], data)
 #     x = [array([transformedPoint.point.x, transformedPoint.point.y])]
+#   uncomment if required for transformation.
     x = [array([data.point.x, data.point.y])]
     if len(frontiers) > 0:
         frontiers = vstack((frontiers, x))
