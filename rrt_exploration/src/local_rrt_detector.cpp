@@ -135,6 +135,8 @@ while(points.points.size()<5)
 ros::spinOnce();
 
 pub.publish(points) ;
+ros::Duration(0.1).sleep();
+
 }
 
 
@@ -190,6 +192,7 @@ float xr,yr;
 std::vector<float> x_rand,x_nearest,x_new;
 
 tf::TransformListener listener;
+int count = 1;
 // Main loop
 while (ros::ok()){
 
@@ -269,8 +272,6 @@ int checking=ObstacleFree(x_nearest,x_new,mapData);
 
 pub.publish(line);  
 
-
-   
 
 ros::spinOnce();
 rate.sleep();
