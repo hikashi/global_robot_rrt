@@ -101,8 +101,12 @@ def node():
             pass
 
     global_frame = "/"+mapData.header.frame_id
-
-    tfLisn = tf.TransformListener()
+	
+    # adding in the try except for the tf tranformer to solve the issue
+    try:
+        tfLisn = tf.TransformListener()
+    except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
+        pass
 
     rospy.loginfo('Waiting for TF Transformer')
     for i in range(0, len(robot_namelist)):
