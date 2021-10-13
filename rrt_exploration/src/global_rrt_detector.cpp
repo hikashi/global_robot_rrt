@@ -131,6 +131,7 @@ while(points.points.size()<5)
 {
 	ros::spinOnce();
 	pub.publish(points) ;
+	ros::Duration(0.1).sleep();
 }
 
 
@@ -229,6 +230,6 @@ while (ros::ok()){
 	pub.publish(line);  	
 
 	ros::spinOnce();
-	rate.sleep();
+	//ros::Duration(0.1).sleep();
   }
   return 0;}
