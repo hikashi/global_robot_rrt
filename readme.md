@@ -1,5 +1,10 @@
 # Installation guide for the Jackal Exploration
 
+## update on the 13 October 2021
+- download the local RRT from the src file and update each jackal. Remember to catkin_make /
+- download the gloval RRT for the server pc and catkin_make it.
+
+
 ## jackal setup for the local RRT (for each jackal)
 1. Download the RRT folders and files, and place them into the catkin_ws directory
 
