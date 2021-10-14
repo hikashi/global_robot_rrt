@@ -9,7 +9,7 @@ from nav_msgs.msg import OccupancyGrid
 from geometry_msgs.msg import PointStamped
 import tf
 from numpy import array, vstack, delete, round
-from functions import gridValue, informationGain, checkSurroundingWall
+from functions import gridValue, informationGain, checkSurroundingWall, gridValueMergedMap
 from sklearn.cluster import MeanShift
 from rrt_exploration.msg import PointArray, invalidArray
 
@@ -215,6 +215,7 @@ def node():
         while z < len(centroids):
             cond1 = False
             cond2 = False
+	    cond3 = False
             temppoint.point.x = centroids[z][0]
             temppoint.point.y = centroids[z][1]
 
@@ -228,8 +229,14 @@ def node():
                 for j in range(0, len(invalidFrontier)):
                     if transformedPoint.point.x == invalidFrontier[j][0] and transformedPoint.point.y == invalidFrontier[j][1]:
                         cond2 = True
+    	    # now working with the cond3
+            mapValue = gridValueMergedMap(mapData, [centroids[z][0], centroids[z][1]])
+            if mapValue == -1 or mapValue > 90: # if the map value is unknown or obstacle
+                cond3 = True
+	    # information gain function
             infoGain = informationGain(mapData, [centroids[z][0], centroids[z][1]], info_radius*0.5)
-            if (cond1 or cond2 or infoGain < 0.2):
+	
+            if (cond1 or cond2 or cond3 or infoGain < 0.2):
                 centroids = delete(centroids, (z), axis=0)
                 z = z-1 
             z += 1
