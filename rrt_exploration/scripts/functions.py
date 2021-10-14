@@ -265,6 +265,37 @@ def Nearest2(V, x):
     return i
 # ________________________________________________________________________________
 
+def gridValueMergedMap(mapData, Xp):
+    resolution = mapData.info.resolution
+    Xstartx = mapData.info.origin.position.x
+    Xstarty = mapData.info.origin.position.y
+
+    width = mapData.info.width
+    Data  = mapData.data
+    # returns grid value at "Xp" location
+    # map data:  100 occupied      -1 unknown       0 free
+    index = (floor((Xp[1]-Xstarty)/resolution)*width) + \
+        (floor((Xp[0]-Xstartx)/resolution))
+    if int(index) < len(Data):
+        dataList = []
+        dataList.append(Data[int(index)])
+        print(find_ind(Data,Xp,radius=2))
+    
+        if int(index)+1 < len(Data):
+            dataList.append(Data[int(index)+1])
+        if int(index)+width < len(Data):
+            dataList.append(Data[int(index)+width])
+        if int(index)-1 > 0:
+            dataList.append(Data[int(index)-1])
+        if int(index)-width > 0:
+            dataList.append(Data[int(index)-width])
+        return np.max(dataList)
+    else:
+        return -1.0
+
+
+# ________________________________________________________________________________
+
 
 def gridValue(mapData, Xp):
     resolution = mapData.info.resolution
