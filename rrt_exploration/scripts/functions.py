@@ -279,8 +279,6 @@ def gridValueMergedMap(mapData, Xp):
     if int(index) < len(Data):
         dataList = []
         dataList.append(Data[int(index)])
-        print(find_ind(Data,Xp,radius=2))
-    
         if int(index)+1 < len(Data):
             dataList.append(Data[int(index)+1])
         if int(index)+width < len(Data):
