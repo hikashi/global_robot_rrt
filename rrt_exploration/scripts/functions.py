@@ -264,37 +264,16 @@ def Nearest2(V, x):
             n = n1
     return i
 # ________________________________________________________________________________
-
-def gridValueMergedMap(mapData, Xp):
-    resolution = mapData.info.resolution
-    Xstartx = mapData.info.origin.position.x
-    Xstarty = mapData.info.origin.position.y
-
-    width = mapData.info.width
-    Data  = mapData.data
-    # returns grid value at "Xp" location
-    # map data:  100 occupied      -1 unknown       0 free
-    index = (floor((Xp[1]-Xstarty)/resolution)*width) + \
-        (floor((Xp[0]-Xstartx)/resolution))
-    if int(index) < len(Data):
-        dataList = []
-        dataList.append(Data[int(index)])
-        if int(index)+1 < len(Data):
-            dataList.append(Data[int(index)+1])
-        if int(index)+width < len(Data):
-            dataList.append(Data[int(index)+width])
-        if int(index)-1 > 0:
-            dataList.append(Data[int(index)-1])
-        if int(index)-width > 0:
-            dataList.append(Data[int(index)-width])
-        return np.max(dataList)
-    else:
-        return -1.0
-
+def squareAreaCheck(data, index, width, distance=2):
+    # now using the data to perform a square area check on the data for removing the invalid point
+    dataOutList = []
+    for j in range(-1*distance, distance+1):
+        for i in range(int(index)+((width*j)-distance), int(index)+((width*j)+distance)):
+            if i < len(data):
+                dataOutList.append(data[int(i)])
+    return dataOutList
 
 # ________________________________________________________________________________
-
-
 def gridValue(mapData, Xp):
     resolution = mapData.info.resolution
     Xstartx = mapData.info.origin.position.x
@@ -306,18 +285,10 @@ def gridValue(mapData, Xp):
     # map data:  100 occupied      -1 unknown       0 free
     index = (floor((Xp[1]-Xstarty)/resolution)*width) + \
         (floor((Xp[0]-Xstartx)/resolution))
-    if int(index) < len(Data):
-        dataList = []
-        dataList.append(Data[int(index)])
-        if int(index)+1 < len(Data):
-            dataList.append(Data[int(index)+1])
-        if int(index)+width < len(Data):
-            dataList.append(Data[int(index)+width])
-        if int(index)-1 > 0:
-            dataList.append(Data[int(index)-1])
-        if int(index)-width > 0:
-            dataList.append(Data[int(index)-width])
-        return np.max(dataList)
+
+    outData = squareAreaCheck(Data, index, width, distance=2)
+    if len(outData) > 1:
+        return np.max(outData)
     else:
         return 100
 
