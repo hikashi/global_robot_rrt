@@ -226,9 +226,13 @@ def node():
                 x = array([transformedPoint.point.x, transformedPoint.point.y])
 
                 cond1 = (gridValue(globalmaps[i], x) > threshold) or cond1
-                for j in range(0, len(invalidFrontier)):
-                    if transformedPoint.point.x == invalidFrontier[j][0] and transformedPoint.point.y == invalidFrontier[j][1]:
-                        cond2 = True
+                for jj in range(0, len(invalidFrontier)):
+                    try:
+			    if transformedPoint.point.x == invalidFrontier[jj][0] and transformedPoint.point.y == invalidFrontier[jj][1]:
+				cond2 = True
+                    except:
+                        print(" point -> %d got problem with the following point: [%f %f]" %(jj, temppoint.point.x, temppoint.point.y))
+
     	    # now working with the cond3
             mapValue = gridValueMergedMap(mapData, [centroids[z][0], centroids[z][1]])
             if mapValue == -1 or mapValue > 90: # if the map value is unknown or obstacle
