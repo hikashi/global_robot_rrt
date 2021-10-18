@@ -3,6 +3,7 @@ import tf
 from numpy import array
 import actionlib
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
+from nav_msgs.msg import Odometry
 from nav_msgs.srv import GetPlan
 from geometry_msgs.msg import PoseStamped
 from numpy import floor
@@ -14,27 +15,26 @@ import random
 
 
 class robot:
-        # rospy.get_param(
-        #     '~plan_service', '/'+self.movebase_prefix+'/NavfnROS/make_plan')
-        # rospy.get_param('~robot_frame', 'base_link')
-        # rospy.get_param('~global_frame', '/map')
     def __init__(self, name, move_base_service, plan_service, global_frame, base_link):
         rospy.loginfo('setting up robot init for robot - ' + name)
         self.assigned_point = []
         self.goal_history = []
+        ###################################################################
         self.name = name
-
         self.goal = MoveBaseGoal()
         self.start = PoseStamped()
         self.end = PoseStamped()
-
-
+        ###################################################################
         self.global_frame = rospy.get_param('~global_frame', global_frame)
         self.robot_frame = rospy.get_param('~robot_frame', "map")
         self.plan_service =  rospy.get_param('~plan_service', plan_service)
         self.listener = tf.TransformListener()
-        self.listener.waitForTransform(
-            self.global_frame, self.name+'/'+self.robot_frame, rospy.Time(0), rospy.Duration(10.0))
+        self.listener.waitForTransform(self.global_frame, self.name+'/'+self.robot_frame, rospy.Time(0), rospy.Duration(10.0))
+        ###################################################################
+        self.total_distance = 0
+        self.first_run = True
+        self.sub = rospy.Subscriber(name + "/odometry/tracking_filtered", Odometry, self.odom_callback)
+        ###################################################################
         cond = 0
         while cond == 0:
             try:
@@ -42,9 +42,8 @@ class robot:
                 (trans, rot) = self.listener.lookupTransform(
                     self.global_frame, self.name+'/'+self.robot_frame, rospy.Time(0))
                 cond = 1
-                print()
             except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
-                cond == 0
+                cond = 0
         self.position = array([trans[0], trans[1]])
         self.assigned_point = self.position
         self.client = actionlib.SimpleActionClient(
@@ -52,12 +51,38 @@ class robot:
         self.client.wait_for_server()
         self.goal.target_pose.header.frame_id = self.name + "/" + self.robot_frame # self.global_frame
         self.goal.target_pose.header.stamp = rospy.Time.now()
-
+        ###################################################################
         rospy.wait_for_service(self.name+self.plan_service)
         self.make_plan = rospy.ServiceProxy(
             self.name+self.plan_service, GetPlan)
         self.start.header.frame_id = self.global_frame
-        self.end.header.frame_id = self.global_frame
+        self.end.header.frame_id = self.global_frame        
+        ###################################################################
+
+    def odom_callback(self, data):
+        cond = 0
+        while cond == 0:
+            try:
+                (trans, rot) = self.listener.lookupTransform(
+                    self.global_frame, data.header.frame_id, rospy.Time(0))
+                cond = 1
+            except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
+                cond == 0
+
+        if self.first_run == True:
+            self.previous_x = trans[0]
+            self.previous_y = trans[1]
+        x = trans[0]
+        y = trans[1]
+        d_increment = np.sqrt(((x - self.previous_x)*(x - self.previous_x)) + ((y - self.previous_y)*(y - self.previous_y)))
+        self.total_distance = self.total_distance + d_increment
+        # print("Total distance traveled is %.2f" %(self.total_distance))
+        self.first_run = False
+        self.previous_x = x
+        self.previous_y = y
+        
+    def getDistanceTraveled(self):
+        return self.total_distance
 
     def getPosition(self):
         cond = 0
@@ -108,10 +133,6 @@ class robot:
         self.assigned_point = array(point)
 
     def cancelGoal(self):
-        # self.client.cancel_goal()
-        # self.goal.target_pose.pose.position.x = point[0]
-        # self.goal.target_pose.pose.position.y = point[1]
-        # self.goal.target_pose.pose.orientation.w = 1.0
         point = self.getPosition()
         self.goal.target_pose.pose.position.x = point[0]
         self.goal.target_pose.pose.position.y = point[1]
@@ -134,6 +155,9 @@ class robot:
         # tolerance should be defined in meter as according to the data, first try 0.04
         return plan.plan.poses
 
+    def setGoalHistory(self, point):
+        self.goal_history.append(point)
+        
     def getGoalHistory(self):
         return self.goal_history
 
@@ -146,7 +170,7 @@ def index_of_point(mapData, Xp):
     Xstarty = mapData.info.origin.position.y
     width = mapData.info.width
     Data = mapData.data
-    index = int(	(floor((Xp[1]-Xstarty)/resolution) *
+    index = int((floor((Xp[1]-Xstarty)/resolution) *
                   width)+(floor((Xp[0]-Xstartx)/resolution)))
     return index
 
@@ -263,6 +287,38 @@ def Nearest2(V, x):
         if (n1 < n):
             n = n1
     return i
+
+
+def gridValueMergedMap(mapData, Xp, distance=2):
+    resolution = mapData.info.resolution
+    Xstartx = mapData.info.origin.position.x
+    Xstarty = mapData.info.origin.position.y
+
+    width = mapData.info.width
+    Data  = mapData.data
+    # returns grid value at "Xp" location
+    # map data:  100 occupied      -1 unknown       0 free
+    index = (floor((Xp[1]-Xstarty)/resolution)*width) + \
+        (floor((Xp[0]-Xstartx)/resolution))
+
+    outData = squareAreaCheck(Data, index, width, distance)
+    # knownAreaPercentage = outData.count   (0)/(np.power((distance*2)+1,2))
+
+    # if knownAreaPercentage <= 0.95:
+    if max(outData,key=outData.count) != -1 and max(outData) != -1: 
+        return max(outData,key=outData.count)
+    elif max(outData,key=outData.count) == -1 and max(outData) == 100:
+        return max(outData)
+    elif max(outData,key=outData.count) == -1 and max(outData) != 100:
+        return max(outData)
+    elif max(outData,key=outData.count) == 0 and max(outData) == 100:
+        return max(outData)
+    elif max(outData,key=outData.count) == 0 and max(outData) == 0:
+        return -1.0
+    else:
+        return -1.0
+    # else:
+    #     return -1.0
 # ________________________________________________________________________________
 def squareAreaCheck(data, index, width, distance=2):
     # now using the data to perform a square area check on the data for removing the invalid point
@@ -288,7 +344,7 @@ def gridValue(mapData, Xp):
 
     outData = squareAreaCheck(Data, index, width, distance=2)
     if len(outData) > 1:
-        return np.max(outData)
+        return max(outData)
     else:
         return 100
 
