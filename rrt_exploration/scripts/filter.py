@@ -18,6 +18,7 @@ from rrt_exploration.msg import PointArray, invalidArray
 mapData = OccupancyGrid()
 frontiers = []
 globalmaps = []
+localmaps  = []
 invalidFrontier=[]
 
 
@@ -42,8 +43,18 @@ def invalidCallBack(data):
 	for point in data.points:
 		invalidFrontier.append(array([point.x,point.y]))
 
-def globalMapCallBack(data):
-    global globalmaps, litraIndx, robot_namelist
+def localMapCallBack(data):
+    global localmaps, robot_namelist
+    # search the topic based on the robot name arrangement suplied by the user
+    topic_breakdownlist = str(data._connection_header['topic']).split('/')
+    
+    for ib in range(0, len(robot_namelist)):
+        if robot_namelist[ib] in topic_breakdownlist:
+            indx = ib
+    localmaps[indx] = data
+
+def globalCostMapCallBack(data):
+    global globalmaps, robot_namelist
     # search the topic based on the robot name arrangement suplied by the user
     topic_breakdownlist = str(data._connection_header['topic']).split('/')
     for ia in range(0, len(robot_namelist)):
@@ -51,11 +62,12 @@ def globalMapCallBack(data):
             indx = ia
     globalmaps[indx] = data
 
+
 # Node----------------------------------------------
 
 
 def node():
-    global frontiers, mapData, globalmaps, litraIndx, robot_namelist, invalidFrontier
+    global frontiers, mapData,localmaps, globalmaps, litraIndx, robot_namelist, invalidFrontier
     rospy.init_node('filter', anonymous=False)
 
     # fetching all parameters
@@ -68,6 +80,7 @@ def node():
     rateHz = rospy.get_param('~rate', 100)
     global_costmap_topic = rospy.get_param(
         '~global_costmap_topic', '/move_base_node/global_costmap/costmap')
+    local_map_topic = rospy.get_param('~local_map', '/map')
     robot_frame = rospy.get_param('~robot_frame', 'base_link')
     inv_frontier_topic= rospy.get_param('~invalid_frontier','/invalid_points')	
 # -------------------------------------------
@@ -81,12 +94,14 @@ def node():
 #---------------------------------------------------------------------------------------------------------------
     for i in range(0, len(robot_namelist)):
         globalmaps.append(OccupancyGrid())
+        localmaps.append(OccupancyGrid())
 
 
     for i in range(0, len(robot_namelist)):
         rospy.loginfo('waiting for  ' + robot_namelist[i])
         print(robot_namelist[i] + global_costmap_topic)
-        rospy.Subscriber(robot_namelist[i] + global_costmap_topic, OccupancyGrid, globalMapCallBack)
+        rospy.Subscriber(robot_namelist[i] + global_costmap_topic, OccupancyGrid, globalCostMapCallBack)
+        rospy.Subscriber(robot_namelist[i] + local_map_topic, OccupancyGrid, localMapCallBack)
 
 # wait if map is not received yet
     while (len(mapData.data) < 1):
@@ -97,6 +112,10 @@ def node():
     for i in range(0, len(robot_namelist)):
         while (len(globalmaps[i].data) < 1):
             rospy.loginfo('Waiting for the global costmap')
+            rospy.sleep(0.1)
+            pass
+        while (len(localmaps[i].data) < 1):
+            rospy.loginfo('Waiting for the local map')
             rospy.sleep(0.1)
             pass
 
@@ -216,6 +235,7 @@ def node():
             cond1 = False
             cond2 = False
 	    cond3 = False
+            cond4 = False
             temppoint.point.x = centroids[z][0]
             temppoint.point.y = centroids[z][1]
 
@@ -232,7 +252,9 @@ def node():
 				cond2 = True
                     except:
                         print(" point -> %d got problem with the following point: [%f %f]" %(jj, temppoint.point.x, temppoint.point.y))
-
+                localMapValue = gridValueMergedMap(localmaps[i], x)
+                if localMapValue == 1 or localMapValue > 90:
+                    cond4 = True
     	    # now working with the cond3
             mapValue = gridValueMergedMap(mapData, [centroids[z][0], centroids[z][1]])
             if mapValue == -1 or mapValue > 90: # if the map value is unknown or obstacle
@@ -240,7 +262,7 @@ def node():
 	    # information gain function
             infoGain = informationGain(mapData, [centroids[z][0], centroids[z][1]], info_radius*0.5)
 	
-            if (cond1 or cond2 or cond3 or infoGain < 0.2):
+            if (cond1 or cond2 or cond3 or cond4 or infoGain < 0.2):
                 centroids = delete(centroids, (z), axis=0)
                 z = z-1 
             z += 1
