@@ -21,9 +21,6 @@ from numpy.linalg import norm
 mapData=OccupancyGrid()
 frontiers=[]
 invalidFrontier=[]
-global1=OccupancyGrid()
-global2=OccupancyGrid()
-global3=OccupancyGrid()
 globalmaps=[]
 def callBack(data):
 	global frontiers
@@ -37,8 +34,7 @@ def mapCallBack(data):
 # Node----------------------------------------------
 
 def node():
-	# global frontiers,mapData,globalmaps,invalidFrontier
-	global frontiers,mapData,global1,global2,global3,globalmaps,invalidFrontier
+	global frontiers,mapData,globalmaps,invalidFrontier
 	rospy.init_node('assigner', anonymous=False)
 
 	# fetching all parameters
