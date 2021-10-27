@@ -95,7 +95,7 @@ line.header.frame_id=mapData.header.frame_id;
 points.header.stamp=ros::Time(0);
 line.header.stamp=ros::Time(0);
 	
-points.ns=line.ns = "markers";
+points.ns=line.ns = "globa_RRT";
 points.id = 0;
 line.id =1;
 
@@ -108,10 +108,10 @@ points.action =points.ADD;
 line.action = line.ADD;
 points.pose.orientation.w =1.0;
 line.pose.orientation.w = 1.0;
-line.scale.x =  0.03;
-line.scale.y= 0.03;
-points.scale.x=0.3; 
-points.scale.y=0.3; 
+line.scale.x =  0.07;
+line.scale.y= 0.07;
+points.scale.x=0.4; 
+points.scale.y=0.4; 
 
 line.color.r =9.0/255.0;
 line.color.g= 91.0/255.0;
@@ -212,7 +212,13 @@ while (ros::ok()){
 		points.points.push_back(p);
 		pub.publish(points) ;
 		targetspub.publish(exploration_goal);
-		points.points.clear();				
+		points.points.clear();
+		// adding for testing out the clearing capabilities
+		V.clear();					
+		x_new[0]=points.points[4].x;
+		x_new[1]=points.points[4].y;
+        	V.push_back(x_new);
+        	line.points.clear();
 	}	
 	else if (checking==1){
 		V.push_back(x_new);
@@ -231,5 +237,6 @@ while (ros::ok()){
 
 	ros::spinOnce();
 	//ros::Duration(0.1).sleep();
+rate.sleep();
   }
   return 0;}
