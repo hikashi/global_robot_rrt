@@ -95,7 +95,7 @@ line.header.frame_id=mapData.header.frame_id;
 points.header.stamp=ros::Time(0);
 line.header.stamp=ros::Time(0);
 	
-points.ns=line.ns = "globa_RRT";
+points.ns=line.ns = "global_RRT";
 points.id = 0;
 line.id =1;
 
@@ -237,6 +237,5 @@ while (ros::ok()){
 
 	ros::spinOnce();
 	//ros::Duration(0.1).sleep();
-rate.sleep();
   }
   return 0;}
