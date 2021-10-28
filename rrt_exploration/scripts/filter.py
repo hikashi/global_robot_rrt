@@ -82,6 +82,7 @@ def node():
         '~global_costmap_topic', '/move_base_node/global_costmap/costmap')
     local_map_topic = rospy.get_param('~local_map', '/map')
     robot_frame = rospy.get_param('~robot_frame', 'base_link')
+    cluster_bandwith = rospy.get_param('~cluster_bandwith', 0.5)
     inv_frontier_topic= rospy.get_param('~invalid_frontier','/invalid_points')	
 # -------------------------------------------
     robot_namelist = robot_namelist.split(',')
@@ -218,7 +219,7 @@ def node():
         centroids = []
         front = copy(frontiers)
         if len(front) > 1:
-            ms = MeanShift(bandwidth=0.3)
+            ms = MeanShift(bandwidth=cluster_bandwith)
             ms.fit(front)
             centroids = ms.cluster_centers_  # centroids array is the centers of each cluster
 
