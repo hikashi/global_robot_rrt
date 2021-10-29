@@ -212,68 +212,69 @@ def node():
 					+ " -remaining time: " + str(int(timeRemaining)) + "s")
 
 #-------------------------------------------------------------------------
-	goal_repeated   = False
-	assigned_winner = -1	
-	if (len(id_record)>0):
-			winner_id=revenue_record.index(max(revenue_record))
-			# check if the goal is the same or not same
-			cond_goal = True
-			for xi in range(0, len(invalidFrontier)):
-				if calculateLocationDistance(robot_assigned_goal[id_record[winner_id]]['goal'], invalidFrontier[xi]) < 0.01:
-					cond_goal = False
-					print(">> invalid goal detected. distance: %.3f" %(calculateLocationDistance(robot_assigned_goal[id_record[winner_id]]['goal'], invalidFrontier[xi])))
-					break
-			cond_history = True
-			try:
-				history = []
-				for xj in range(0,len(robot_namelist)):
-						history.extend(robot[xj].getGoalHistory())
-				for xh in range(0, len(history)):
-						if calculateLocationDistance(centroid_record[winner_id], history[xh]) < 0.01:
-							remainingTime = ((robot_assigned_goal[xh]['time_start'] + robot_assigned_goal[xh]['time_thres']) - rospy.get_rostime().secs) 
-							if remainingTime < 0.0:
-								cond_history = False
-								print('history repeat the same goal assignment')
-								break
-			except:
-				pass
-			## check forthe goal assignment condition.
-			# also need to check whether the goal is repeated i nthe goal or not
-			if rospy.get_rostime().secs >= next_assign_time:
-				if cond_history and cond_goal:
-# 					robots[id_record[winner_id]].sendGoal(centroid_record[winner_id])
-					robots[id_record[winner_id]].sendGoalTransformed(centroid_record[winner_id])
-					robots[id_record[winner_id]].setGoalHistory(centroid_record[winner_id])	
-					robot_assigned_goal[id_record[winner_id]]['lastgoal']   = robot_assigned_goal[id_record[winner_id]]['goal'].copy()
-					robot_assigned_goal[id_record[winner_id]]['goal']       = centroid_record[winner_id]
-					robot_assigned_goal[id_record[winner_id]]['startLoc']   = robots[id_record[winner_id]].getPosition()
-					robot_assigned_goal[id_record[winner_id]]['time_start'] = rospy.get_rostime().secs
-					robot_assigned_goal[id_record[winner_id]]['time_thres'] = calcDynamicTimeThreshold(robots[id_record[winner_id]].getPosition(), centroid_record[winner_id], time_per_meter)
-					rospy.loginfo(robot_namelist[id_record[winner_id]] + " has been assigned to  "+str(centroid_record[winner_id]) + 	
-					" mission start at " + str(robot_assigned_goal[id_record[winner_id]]['time_start']) + " sec  - Limit: " + str(robot_assigned_goal[id_record[winner_id]]['time_thres']) + "s") 
-					next_assign_time = rospy.get_rostime().secs + delay_after_assignement
-			# if the goal is not invalid and repeated 
-			if cond_history and not cond_goal:
-				goal_repeated   = True
-				assigned_winner = id_record[winner_id]
-				faultyGoal      = centroid_record[winner_id]
+		goal_repeated   = False
+		assigned_winner = -1	
+		if (len(id_record)>0):
+				winner_id=revenue_record.index(max(revenue_record))
+				# check if the goal is the same or not same
+				cond_goal = True
+				for xi in range(0, len(invalidFrontier)):
+					if calculateLocationDistance(robot_assigned_goal[id_record[winner_id]]['goal'], invalidFrontier[xi]) < 0.01:
+						cond_goal = False
+						print(">> invalid goal detected. distance: %.3f" %(calculateLocationDistance(robot_assigned_goal[id_record[winner_id]]['goal'], invalidFrontier[xi])))
+						break
+				cond_history = True
+				try:
+					history = []
+					for xj in range(0,len(robot_namelist)):
+							history.extend(robot[xj].getGoalHistory())
+					for xh in range(0, len(history)):
+							if calculateLocationDistance(centroid_record[winner_id], history[xh]) < 0.01:
+								remainingTime = ((robot_assigned_goal[xh]['time_start'] + robot_assigned_goal[xh]['time_thres']) - rospy.get_rostime().secs) 
+								if remainingTime < 0.0:
+									cond_history = False
+									print('history repeat the same goal assignment')
+									break
+				except:
+					pass
+				## check forthe goal assignment condition.
+				# also need to check whether the goal is repeated i nthe goal or not
+				if rospy.get_rostime().secs >= next_assign_time:
+					if cond_history and cond_goal:
+	# 					robots[id_record[winner_id]].sendGoal(centroid_record[winner_id])
+						robots[id_record[winner_id]].sendGoalTransformed(centroid_record[winner_id])
+						robots[id_record[winner_id]].setGoalHistory(centroid_record[winner_id])	
+						robot_assigned_goal[id_record[winner_id]]['lastgoal']   = robot_assigned_goal[id_record[winner_id]]['goal'].copy()
+						robot_assigned_goal[id_record[winner_id]]['goal']       = centroid_record[winner_id]
+						robot_assigned_goal[id_record[winner_id]]['startLoc']   = robots[id_record[winner_id]].getPosition()
+						robot_assigned_goal[id_record[winner_id]]['time_start'] = rospy.get_rostime().secs
+						robot_assigned_goal[id_record[winner_id]]['time_thres'] = calcDynamicTimeThreshold(robots[id_record[winner_id]].getPosition(), centroid_record[winner_id], time_per_meter)
+						rospy.loginfo(robot_namelist[id_record[winner_id]] + " has been assigned to  "+str(centroid_record[winner_id]) + 	
+						" mission start at " + str(robot_assigned_goal[id_record[winner_id]]['time_start']) + " sec  - Limit: " + str(robot_assigned_goal[id_record[winner_id]]['time_thres']) + "s") 
+						next_assign_time = rospy.get_rostime().secs + delay_after_assignement
+				# if the goal is not invalid and repeated 
+				if cond_history and not cond_goal:
+					goal_repeated   = True
+					assigned_winner = id_record[winner_id]
+					faultyGoal      = centroid_record[winner_id]
 
-#-------------------------------------------------------------------------				
-				if goal_repeated:
+	#-------------------------------------------------------------------------				
+		if goal_repeated:
 			repeatInvalid = False
+			distance = calculateLocationDistance(robots[assigned_winner].getPosition(), robot_assigned_goal[assigned_winner]['goal'])
 			for ie in range(0,len(invalidFrontier)):
-				if calculateLocationDistance(invalidFrontier[ie], robot_assigned_goal[ix]['goal']) < 0.01:
+				if calculateLocationDistance(invalidFrontier[ie], robot_assigned_goal[assigned_winner]['goal']) < 0.01:
 					repeatInvalid = True
 			if repeatInvalid == False:
 				tempInvGoal = Point()
-				tempInvGoal.x = robot_assigned_goal[ix]['goal'][0]				
-				tempInvGoal.y = robot_assigned_goal[ix]['goal'][1]	
+				tempInvGoal.x = robot_assigned_goal[assigned_winner]['goal'][0]				
+				tempInvGoal.y = robot_assigned_goal[assigned_winner]['goal'][1]	
 				tempInvGoal.z = 0.0	
 				# if the distance is very far then do not publish as invalid point, mostly cant reach goal within the given time limit 
 				if distance <= invalid_distance:
 					invalid_goal_array.points.append(copy(tempInvGoal))
-					invalidFrontier.append(robot_assigned_goal[ix]['goal'])		
-					temp_inv_array.append(robot_assigned_goal[ix]['goal'])
+					invalidFrontier.append(robot_assigned_goal[assigned_winner]['goal'])		
+					temp_inv_array.append(robot_assigned_goal[assigned_winner]['goal'])
 			print('Robot: %d assigned goal is repeated in the history' %(winner_id))
 			robot_assigned_goal[assigned_winner]['lastgoal']   = faultyGoal
 			robot_assigned_goal[assigned_winner]['goal']       = robots[assigned_winner].getPosition()
@@ -281,10 +282,9 @@ def node():
 			robot_assigned_goal[assigned_winner]['startLoc']   = robots[assigned_winner].getPosition()
 			robot_assigned_goal[assigned_winner]['time_thres'] = -1
 			# cancel goal
-			rospy.loginfo("!!!> Robot " + robot_namelist[ix] + " give up goal: " + str(robot_assigned_goal[ix]['goal'])
+			rospy.loginfo("!!!> Robot " + robot_namelist[assigned_winner] + " give up goal: " + str(robot_assigned_goal[assigned_winner]['goal'])
 			+ " at time: "  + str(currTime) + " sec  -- distance: " + str(distance) + " -- goal repeated")
-			robots[ix].cancelGoal()
-
+			robots[assigned_winner].cancelGoal()
 		else:
 			for ix in range(0,len(robot_namelist)):
 				currTime = rospy.get_rostime().secs
