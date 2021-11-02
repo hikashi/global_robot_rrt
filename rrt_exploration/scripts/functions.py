@@ -203,9 +203,6 @@ def informationGain(mapData, point, r):
         limit = ((start/mapData.info.width)+2)*mapData.info.width
         for i in range(start, end+1):
             if (i >= 0 and i < limit and i < len(mapData.data)):
-                # print(array(point))
-                # print(point_of_index(mapData, i))
-                # print(norm(array(point)-point_of_index(mapData, i)))
                 if(mapData.data[i] == -1 and norm(array(point)-point_of_index(mapData, i)) <= r):
                     infoGain += 1.0
     return infoGain*(mapData.info.resolution**2)
@@ -228,6 +225,68 @@ def discount(mapData, assigned_pt, centroids, infoGain, r):
                         # this should be modified, subtract the area of a cell, not 1
                         infoGain[j] -= 1
     return infoGain
+
+# ________________________________________________________________________________
+
+def discount2(mapData, assigned_pt, centroids, infoGain, r):
+    for j in range(0, len(infoGain)):
+        temp_infoGain = 0.0
+        index = index_of_point(mapData, centroids[j])
+        r_region = int(r/mapData.info.resolution)
+        init_index = index-r_region*(mapData.info.width+1)
+        for n in range(0, 2*r_region+1):
+            start = n*mapData.info.width+init_index
+            end = start+2*r_region
+            limit = ((start/mapData.info.width)+2)*mapData.info.width
+            for i in range(start, end+1):
+                if (i >= 0 and i < limit and i < len(mapData.data)):
+                    if(mapData.data[i] == -1 and norm(array(centroids[j]) - point_of_index(mapData, i)) <= r and norm(point_of_index(mapData, i)-assigned_pt) <= r):
+                        # this should be modified, subtract the area of a cell, not 1
+                        # infoGain[j] = infoGain[j] - 1.0
+                        temp_infoGain += 1.0
+        infoGain[j] -= (temp_infoGain*(mapData.info.resolution**2))
+    return infoGain
+# ________________________________________________________________________________
+def relativePositionMetric(inputLoc, robotIndex, robots_position, distance_threshold=3.0):
+    if len(robots_position) > 1:
+        inputList = []
+        for i in range(0, len(robots_position)):
+            if i != robotIndex:
+                inputList.append(robots_position[i])
+        # now calculate relative position for each of the robot in the list 
+        distanceList = []
+        for j in inputList:
+            distanceList.append(calculateLocationDistance(j, inputLoc))
+        # now get the largest distance and perform calculation on the data
+        maxDistance = max(distanceList)
+        if maxDistance > distance_threshold:
+            return 1.0
+        else:
+            temp = maxDistance/distance_threshold
+            if temp < 0.01:
+                return 0.01
+            else:
+                return temp
+    else:
+        return 1.0
+
+# ________________________________________________________________________________
+def getMaxRevenueForRobot(revenue_record, id_record, robotID):
+    extracted_index   = []
+    extracted_revenue = []
+    # assuming both revenue record and id_record have the same length
+    for i in range(0, len(id_record)):
+        if id_record[i] == robotID:
+            extracted_index.append(i)
+            extracted_revenue.append(revenue_record[i])
+    # now extracting the max value
+    if len(extracted_revenue) > 0:
+        max_idx = extracted_revenue.index(max(extracted_revenue))
+        return extracted_index[max_idx]
+    else:
+        return -1 # denote skip
+    # given max_idx
+
 # ________________________________________________________________________________
 def calculateLocationDistance(input_loc, dest_loc):
     return(np.sqrt(np.power(input_loc[0]-dest_loc[0],2) + np.power(input_loc[1]-dest_loc[1],2)))
@@ -295,6 +354,7 @@ def Nearest2(V, x):
             n = n1
     return i
 
+# ________________________________________________________________________________
 
 def gridValueMergedMap(mapData, Xp, distance=2):
     resolution = mapData.info.resolution
@@ -310,20 +370,21 @@ def gridValueMergedMap(mapData, Xp, distance=2):
 
     outData = squareAreaCheck(Data, index, width, distance)
     # knownAreaPercentage = outData.count   (0)/(np.power((distance*2)+1,2))
-
-    # if knownAreaPercentage <= 0.95:
-    if max(outData,key=outData.count) != -1 and max(outData) != -1: 
-        return max(outData,key=outData.count)
-    elif max(outData,key=outData.count) == -1 and max(outData) == 100:
-        return max(outData)
-    elif max(outData,key=outData.count) == -1 and max(outData) != 100:
-        return max(outData)
-    elif max(outData,key=outData.count) == 0 and max(outData) == 100:
-        return max(outData)
-    elif max(outData,key=outData.count) == 0 and max(outData) == 0:
-        return -1.0
+    
+    if len(outData) > 1:
+        if 100 not in outData:
+            if max(outData,key=outData.count) == -1 and max(outData) == 0:
+                return -1
+            elif max(outData,key=outData.count) == -1 and max(outData) == -1:
+                return 100
+            elif max(outData,key=outData.count) == 0 and -1 in outData:
+                return -1
+            else:
+                return -1
+        else:
+            return 100
     else:
-        return -1.0
+        return 100
     # else:
     #     return -1.0
 # ________________________________________________________________________________
