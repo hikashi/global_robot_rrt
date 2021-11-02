@@ -163,8 +163,8 @@ def node():
 
     points.pose.orientation.w = 1.0
 
-    points.scale.x = 0.2
-    points.scale.y = 0.2
+    points.scale.x = 0.5
+    points.scale.y = 0.5
 
     points.color.r = 255.0/255.0
     points.color.g = 255.0/255.0
@@ -193,8 +193,8 @@ def node():
 
     points_clust.pose.orientation.w = 1.0
 
-    points_clust.scale.x = 0.2
-    points_clust.scale.y = 0.2
+    points_clust.scale.x = 0.5
+    points_clust.scale.y = 0.5
     points_clust.color.r = 0.0/255.0
     points_clust.color.g = 255.0/255.0
     points_clust.color.b = 0.0/255.0
@@ -254,11 +254,11 @@ def node():
                     except:
                         print(" point -> %d got problem with the following point: [%f %f]" %(jj, temppoint.point.x, temppoint.point.y))
                 localMapValue = gridValueMergedMap(localmaps[i], x)
-                if localMapValue == 1 or localMapValue > 90:
+                if localMapValue > 90:
                     cond4 = True
     	    # now working with the cond3
             mapValue = gridValueMergedMap(mapData, [centroids[z][0], centroids[z][1]])
-            if mapValue == -1 or mapValue > 90: # if the map value is unknown or obstacle
+            if mapValue > 90: # if the map value is unknown or obstacle
                 cond3 = True
 	    # information gain function
             infoGain = informationGain(mapData, [centroids[z][0], centroids[z][1]], info_radius*0.5)
