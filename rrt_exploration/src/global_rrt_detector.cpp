@@ -7,7 +7,7 @@
 #include "stdint.h"
 #include "functions.h"
 #include "mtrand.h"
-
+// #include <ros/console.h>
 
 #include "nav_msgs/OccupancyGrid.h"
 #include "geometry_msgs/PointStamped.h"
@@ -25,6 +25,7 @@ geometry_msgs::PointStamped clickedpoint;
 geometry_msgs::PointStamped exploration_goal;
 visualization_msgs::Marker points,line;
 float xdim,ydim,resolution,Xstartx,Xstarty,init_map_x,init_map_y;
+int updated;
 
 rdm r; // for genrating random numbers
 
@@ -33,6 +34,7 @@ rdm r; // for genrating random numbers
 //Subscribers callback functions---------------------------------------
 void mapCallBack(const nav_msgs::OccupancyGrid::ConstPtr& msg)
 {
+updated = 1;
 mapData=*msg;
 }
 
@@ -214,11 +216,20 @@ while (ros::ok()){
 		targetspub.publish(exploration_goal);
 		points.points.clear();
 		// adding for testing out the clearing capabilities
-		V.clear();					
-		x_new[0]=points.points[4].x;
-		x_new[1]=points.points[4].y;
-        	V.push_back(x_new);
-        	line.points.clear();
+		// ROS_DEBUG("updated yes or not: %d", updated);
+		if(updated == 1){				
+			// set random on the points
+			int rand_index = std::rand() % V.size();
+			x_new[0]= V[rand_index][0];
+			x_new[1]= V[rand_index][1];
+
+			V.clear();	
+			// x_new[0]=points.points[4].x;
+			// x_new[1]=points.points[4].y;
+			V.push_back(x_new);
+			line.points.clear();
+			updated = 0;
+		}
 	}	
 	else if (checking==1){
 		V.push_back(x_new);
@@ -237,5 +248,6 @@ while (ros::ok()){
 
 	ros::spinOnce();
 	//ros::Duration(0.1).sleep();
+	// rate.sleep();
   }
   return 0;}
