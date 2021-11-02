@@ -53,6 +53,8 @@ def node():
 
     # check only 4 points input by the user.
     boundaryPolygon  = rospy.Publisher(topicOutput, PolygonStamped, queue_size=10)
+    start_time = rospy.get_rostime().secs
+    nextTimeReport = start_time + timeInterval
     while not rospy.is_shutdown():
         # now start workign on publishing theboudnary geometry point
         header = Header()
@@ -67,6 +69,10 @@ def node():
         boundaryList.header = header
 
         boundaryPolygon.publish(boundaryList)
+        
+        if nextTimeReport <= rospy.get_rostime().secs:
+            rospy.loginfo('--- >>> current time: %.2f    time elapsed: %.2f' %(rospy.get_rostime().secs, rospy.get_rostime().secs-start_time))
+            nextTimeReport = rospy.get_rostime().secs + timeInterval
         
 
 #############################################################
