@@ -1,8 +1,15 @@
 # Installation guide for the Jackal Exploration
 
+
+## update on the 03 November 2021
+- added the new goal assignment function for the robot. 
+- new RRT growing features and increase the collisin avoidane function for the data
+- new map filtering function (may filter more points resulting less frontier for the robot to travel)
+-
+
 ## update on the 13 October 2021
 - download the local RRT from the src file and update each jackal. Remember to catkin_make /
-- download the gloval RRT for the server pc and catkin_make it.
+- download the global RRT for the server pc and catkin_make it.
 
 
 ## jackal setup for the local RRT (for each jackal)
