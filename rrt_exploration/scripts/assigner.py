@@ -224,20 +224,27 @@ def node():
 		for i in nb+na:
 			infoGain=discount2(mapData,robot_assigned_goal[i]['lastgoal'],centroids,infoGain,info_radius)
 #-------------------------------------------------------------------------            
+		#-------------------------------------------------------------------------            
 		revenue_record=[]
 		centroid_record=[]
 		id_record=[]
 		robots_position = []
+		robots_goals    = []
 		for qq in range(0, len(robot_namelist)):
-  			# robots_position.append(robots[qq].getPosition())
-  			robots_position.append(robot_assigned_goal[qq]['goal'])
-		for ir in na:
+  			robots_position.append(robots[qq].getPosition())
+  			robots_goals.append(robot_assigned_goal[qq]['goal'])
+
+		for ir in na+nb:
 			for ip in range(0,len(centroids)):
 				cost=norm(robots_position[ir]-centroids[ip])	
 				information_gain=infoGain[ip]
-				if (norm(robots_position[ir]-centroids[ip])<=hysteresis_radius):
+				if norm(centroids[ip]-robots_goals[ir])<hysteresis_radius:
 					information_gain*=hysteresis_gain
-				rp_metric = relativePositionMetric(centroids[ip], ir, robots_position, rp_metric_distance)
+
+				if norm(robots_goals[ir]-centroids[ip])<=hysteresis_radius:
+					information_gain=informationGain(mapData,[centroids[ip][0],centroids[ip][1]],info_radius)*hysteresis_gain
+			
+				rp_metric = relativePositionMetric(centroids[ip], ir, robots_goals, rp_metric_distance)
 				
 				if information_gain >= 0:
 					information_gain = information_gain * rp_metric
@@ -245,49 +252,11 @@ def node():
 					information_gain = information_gain / rp_metric
 
 				revenue=(information_gain)-cost
-				# if revenue >= 0:
-				# 	revenue = revenue * rp_metric
-				# else:
-				# 	revenue = revenue / rp_metric
-
 				revenue_record.append(revenue)
 				centroid_record.append(centroids[ip])
 				id_record.append(ir)
-
-		# relativePositionMetric(inputLoc, robotIndex, robots_position, distance_threshold=3.0):
-		if len(na)<1:
-			revenue_record=[]
-			centroid_record=[]
-			id_record=[]
-			for ir in nb:
-  			# now working on extracting the position for each of the robot
-  			# perform calculation on the revenue and information gain for the robots
-				for ip in range(0,len(centroids)):
-					cost=norm(robots_position[ir]-centroids[ip])	
-					information_gain=infoGain[ip]
-					if (norm(robots_position[ir]-centroids[ip])<=hysteresis_radius):
-						information_gain*=hysteresis_gain
-				
-					if ((norm(centroids[ip]-robot_assigned_goal[ir]['lastgoal']))<hysteresis_radius):
-						information_gain=informationGain(mapData,[centroids[ip][0],centroids[ip][1]],info_radius)*hysteresis_gain
-
-					rp_metric = relativePositionMetric(centroids[ip], ir, robots_position, rp_metric_distance)
-
-					if information_gain >= 0:
-						information_gain = information_gain * rp_metric
-					else:
-						information_gain = information_gain / rp_metric
-
-					revenue=information_gain-cost
-					# if revenue >= 0:
-					# 	revenue = revenue * rp_metric
-					# else:
-					# 	revenue = revenue / rp_metric
-					
-					revenue_record.append(revenue)
-					centroid_record.append(centroids[ip])
-					id_record.append(ir)
 			
+#-------------------------------------------------------------------------	
 		# rospy.loginfo("available robots: "+str(na))	
 		if time_interval_due:
 			if len(na) >= 1:
@@ -309,7 +278,7 @@ def node():
 			
 #-------------------------------------------------------------------------	
 		assigned_winner = -1
-		goal_repeated = False
+		goal_repeated   = False
 		if (len(id_record)>0):
 			robotListTemp = na + nb
 			random.shuffle(robotListTemp)
@@ -345,7 +314,7 @@ def node():
 								distance_apart = calculateLocationDistance(centroid_record[winner_id], history[xj][xh])
 								if distance_apart < 0.1:
 									remainingTime = ((robot_assigned_goal[xj]['time_start'] + robot_assigned_goal[xj]['time_thres']) - rospy.get_rostime().secs) 
-									if remainingTime < 0.0:
+									if remainingTime < (0.0-delay_after_assignement):
 										cond_history = False
 										print('history repeat the same goal assignment')
 										break
@@ -364,11 +333,16 @@ def node():
 							rospy.loginfo(robot_namelist[id_record[winner_id]] + " has been assigned to  "+str(centroid_record[winner_id]) + 	
 							" mission start at " + str(robot_assigned_goal[id_record[winner_id]]['time_start']) + " sec  - Limit: " + str(robot_assigned_goal[id_record[winner_id]]['time_thres']) + "s") 
 							next_assign_time = rospy.get_rostime().secs + delay_after_assignement
+						else:
+							next_assign_time = rospy.get_rostime().secs + delay_after_assignement
 					# print("cond_history:%s - cond_goal:%s - cond_farAssign:%s" %(cond_history,cond_goal,cond_farAssign))
+				else:
+					print('hello')
 			if cond_history and not cond_goal:
 				goal_repeated   = True
 				assigned_winner = id_record[winner_id]
 				faultyGoal      = centroid_record[winner_id]
+
 							
 			#-------------------------------------------------------------------------
 			if goal_repeated:
