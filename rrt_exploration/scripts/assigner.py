@@ -224,26 +224,24 @@ def node():
 		for i in nb+na:
 			infoGain=discount2(mapData,robot_assigned_goal[i]['lastgoal'],centroids,infoGain,info_radius)
 #-------------------------------------------------------------------------            
-		#-------------------------------------------------------------------------            
+#-------------------------------------------------------------------------            
 		revenue_record=[]
 		centroid_record=[]
 		id_record=[]
 		robots_position = []
 		robots_goals    = []
-		for qq in range(0, len(robot_namelist)):
-  			robots_position.append(robots[qq].getPosition())
-  			robots_goals.append(robot_assigned_goal[qq]['goal'])
-
 		for ir in na+nb:
 			for ip in range(0,len(centroids)):
 				cost=norm(robots_position[ir]-centroids[ip])	
+				# if cost <= (rp_metric_distance*1.5):
 				information_gain=infoGain[ip]
 				if norm(centroids[ip]-robots_goals[ir])<hysteresis_radius:
 					information_gain*=hysteresis_gain
 
-				if norm(robots_goals[ir]-centroids[ip])<=hysteresis_radius:
+				if norm(robots_position[ir]-centroids[ip])<=hysteresis_radius:
 					information_gain=informationGain(mapData,[centroids[ip][0],centroids[ip][1]],info_radius)*hysteresis_gain
 			
+				# if norm(centroids[ip]-robots_goals[ir])<hysteresis_radius:
 				rp_metric = relativePositionMetric(centroids[ip], ir, robots_goals, rp_metric_distance)
 				
 				if information_gain >= 0:
@@ -255,7 +253,6 @@ def node():
 				revenue_record.append(revenue)
 				centroid_record.append(centroids[ip])
 				id_record.append(ir)
-			
 #-------------------------------------------------------------------------	
 		# rospy.loginfo("available robots: "+str(na))	
 		if time_interval_due:
