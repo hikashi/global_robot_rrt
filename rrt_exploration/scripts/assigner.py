@@ -230,6 +230,9 @@ def node():
 		id_record=[]
 		robots_position = []
 		robots_goals    = []
+		for qq in range(0, len(robot_namelist)):
+  			robots_position.append(robots[qq].getPosition())
+  			robots_goals.append(robot_assigned_goal[qq]['goal'])
 		for ir in na+nb:
 			for ip in range(0,len(centroids)):
 				cost=norm(robots_position[ir]-centroids[ip])	
