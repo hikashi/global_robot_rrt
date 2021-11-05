@@ -1,8 +1,9 @@
 import rospy
 import tf
-from numpy import array
+from numpy import array, number, record
 import actionlib
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
+from actionlib_msgs.msg import GoalStatusArray
 from nav_msgs.msg import Odometry
 from nav_msgs.srv import GetPlan
 from geometry_msgs.msg import PoseStamped
@@ -15,25 +16,28 @@ import random
 
 
 class robot:
-    def __init__(self, name, move_base_service, plan_service, global_frame, base_link):
-        rospy.loginfo('setting up robot init for robot - ' + name)
+    def __init__(self, name, move_base_service, in_service, global_frame, base_link):
+        rospy.loginfo('setting up robot init for robot - ' + name)	
         self.assigned_point = []
         self.goal_history = []
-        ###################################################################
         self.name = name
-        self.goal = MoveBaseGoal()
+        #################################################################
+        self.goal  = MoveBaseGoal()
         self.start = PoseStamped()
-        self.end = PoseStamped()
-        ###################################################################
+        self.end   = PoseStamped()
+        #################################################################        
         self.global_frame = rospy.get_param('~global_frame', global_frame)
-        self.robot_frame = rospy.get_param('~robot_frame', "map")
-        self.plan_service =  rospy.get_param('~plan_service', plan_service)
+        self.robot_frame = rospy.get_param('~robot_frame', base_link)
+        self.plan_service =  rospy.get_param('~plan_service', in_service)
+        # print("plan service" + in_service)
         self.listener = tf.TransformListener()
         self.listener.waitForTransform(self.global_frame, self.name+'/'+self.robot_frame, rospy.Time(0), rospy.Duration(10.0))
         ###################################################################
         self.total_distance = 0
         self.first_run = True
-        self.sub = rospy.Subscriber(name + "/odometry/tracking_filtered", Odometry, self.odom_callback)
+        self.movebase_status = 0
+        self.sub       = rospy.Subscriber(name + "/odom", Odometry, self.odom_callback)
+        self.statussub = rospy.Subscriber(name + "/movebase/status", GoalStatusArray, self.movebase_status_callback)
         ###################################################################
         cond = 0
         while cond == 0:
@@ -41,23 +45,30 @@ class robot:
                 rospy.loginfo('Waiting for the robot transform')
                 (trans, rot) = self.listener.lookupTransform(
                     self.global_frame, self.name+'/'+self.robot_frame, rospy.Time(0))
+                # print(self.name+'/'+self.robot_frame)
                 cond = 1
             except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
-                cond = 0
+                cond == 0
+        #####################################################################
         self.position = array([trans[0], trans[1]])
+        self.previous_x = 0
+        self.previous_y = 0
         self.assigned_point = self.position
-        self.client = actionlib.SimpleActionClient(
-            self.name+move_base_service, MoveBaseAction)
+        # print('waiting for the move_base service - %s' %(self.name+move_base_service))
+        self.client = actionlib.SimpleActionClient('/' + self.name+move_base_service, MoveBaseAction)
         self.client.wait_for_server()
-        self.goal.target_pose.header.frame_id = self.name + "/" + self.robot_frame # self.global_frame
+        self.goal.target_pose.header.frame_id = self.global_frame
         self.goal.target_pose.header.stamp = rospy.Time.now()
-        ###################################################################
+        ######################################################################
+        # print('waiting for the plan service -%s' %('/' + self.name+self.plan_service))
         rospy.wait_for_service(self.name+self.plan_service)
-        self.make_plan = rospy.ServiceProxy(
-            self.name+self.plan_service, GetPlan)
+        self.make_plan = rospy.ServiceProxy(self.name+self.plan_service, GetPlan)
+
         self.start.header.frame_id = self.global_frame
-        self.end.header.frame_id = self.global_frame        
-        ###################################################################
+        self.end.header.frame_id = self.global_frame
+        # print('done setting up robot')
+        #######################################################################
+
 
     def odom_callback(self, data):
         cond = 0
@@ -80,7 +91,23 @@ class robot:
         self.first_run = False
         self.previous_x = x
         self.previous_y = y
-        
+    
+    def movebase_status_callback(self, data):
+        if len(data.status_list) > 0:
+            self.movebase_status = data.status_list.status
+        # uint8 PENDING=0
+        # uint8 ACTIVE=1
+        # uint8 PREEMPTED=2
+        # uint8 SUCCEEDED=3
+        # uint8 ABORTED=4
+        # uint8 REJECTED=5
+        # uint8 PREEMPTING=6
+        # uint8 RECALLING=7
+        # uint8 RECALLED=8
+    
+    def get_movebase_status(self):
+        return self.movebase_status
+
     def getDistanceTraveled(self):
         return self.total_distance
 
@@ -102,17 +129,14 @@ class robot:
                 point = PoseStamped()
                 t = self.listener.getLatestCommonTime(self.name + '/' + self.robot_frame, self.global_frame)
                 point.header.frame_id = self.global_frame
-
                 point.pose.position.x = trans[0]
                 point.pose.position.y = trans[1]
-
                 point.pose.orientation.w = 1.0
-
                 transformed = self.listener.transformPose(self.name + '/' + self.robot_frame, point)
                 return (transformed.pose.position.x, transformed.pose.position.y)
             except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
                 pass
-
+    
     def sendGoalTransformed(self, point):
         transform_point = self.transformPointToRobotFrame(point)
         self.goal.target_pose.pose.position.x = transform_point[0]
@@ -122,29 +146,24 @@ class robot:
         self.client.send_goal(self.goal)
         self.goal_history.append(array(point))
         self.assigned_point = array(point)
-
+        
     def sendGoal(self, point):
+        # transform_point = self.transformPointToRobotFrame(point)
         self.goal.target_pose.pose.position.x = point[0]
         self.goal.target_pose.pose.position.y = point[1]
         self.goal.target_pose.pose.orientation.w = 1.0
         # print('robot: %s  x: %f y: %f' %(self.name, point[0],point[1]))
         self.client.send_goal(self.goal)
-        self.goal_history.append(array(point))
+        # self.goal_history.append(array(point))
         self.assigned_point = array(point)
 
     def cancelGoal(self):
-#         point = self.getPosition()
-#         self.goal.target_pose.pose.position.x = point[0]
-#         self.goal.target_pose.pose.position.y = point[1]
-#         self.goal.target_pose.pose.orientation.w = 1.0
-        # self.client.cancel_goal()
-        # self.client.cancel_goal()
         point = self.getPosition()
-        transform_point = self.transformPointToRobotFrame(point)
-        self.goal.target_pose.pose.position.x = transform_point[0]
-        self.goal.target_pose.pose.position.y = transform_point[1]
+        self.goal.target_pose.pose.position.x = point[0]
+        self.goal.target_pose.pose.position.y = point[1]
         self.goal.target_pose.pose.orientation.w = 1.0
         self.client.send_goal(self.goal)
+        # self.client.sendGoalTransformed(self.goal)
         self.assigned_point = array(point)
 
     def getState(self):
@@ -157,17 +176,18 @@ class robot:
         self.end.pose.position.y = end[1]
         start = self.listener.transformPose(self.name+'/map', self.start)
         end = self.listener.transformPose(self.name+'/map', self.end)
-        # plan = self.make_plan(start=start, goal=end, tolerance=0.0)
-        plan = self.make_plan(start=start, goal=end, tolerance=0.03)
+        # plan = self.make_plan(start=start, goal=end, tolerance=0.45)
+        plan = self.make_plan(start=start, goal=end, tolerance=0.3)
+        # plan = self.make_plan(start=start, goal=end, tolerance=0.3)
         # tolerance should be defined in meter as according to the data, first try 0.04
         return plan.plan.poses
-
+    
     def setGoalHistory(self, point):
         self.goal_history.append(point)
-        
+
     def getGoalHistory(self):
         return self.goal_history
-
+            
 # ________________________________________________________________________________
 
 
@@ -204,8 +224,9 @@ def informationGain(mapData, point, r):
         for i in range(start, end+1):
             if (i >= 0 and i < limit and i < len(mapData.data)):
                 if(mapData.data[i] == -1 and norm(array(point)-point_of_index(mapData, i)) <= r):
-                    infoGain += 1.0
+                    infoGain = infoGain + 1.0
     return infoGain*(mapData.info.resolution**2)
+    # need to check the resolution
 # ________________________________________________________________________________
 
 
@@ -223,10 +244,9 @@ def discount(mapData, assigned_pt, centroids, infoGain, r):
                     current_pt = centroids[j]
                     if(mapData.data[i] == -1 and norm(point_of_index(mapData, i)-current_pt) <= r and norm(point_of_index(mapData, i)-assigned_pt) <= r):
                         # this should be modified, subtract the area of a cell, not 1
-                        infoGain[j] -= 1
+                        infoGain[j] = infoGain[j] - 1.0
     return infoGain
 
-# ________________________________________________________________________________
 
 def discount2(mapData, assigned_pt, centroids, infoGain, r):
     for j in range(0, len(infoGain)):
@@ -286,7 +306,6 @@ def getMaxRevenueForRobot(revenue_record, id_record, robotID):
     else:
         return -1 # denote skip
     # given max_idx
-
 # ________________________________________________________________________________
 def calculateLocationDistance(input_loc, dest_loc):
     return(np.sqrt(np.power(input_loc[0]-dest_loc[0],2) + np.power(input_loc[1]-dest_loc[1],2)))
@@ -297,11 +316,11 @@ def calcDynamicTimeThreshold(curr_pos, goal_pos, time_per_meter):
     dist1 = np.sqrt(np.power(curr_pos[0]-goal_pos[0],2) + np.power(curr_pos[1]-goal_pos[1],2))
     if dist1 < 1.0:
         return time_per_meter
-    elif dist1 >= 1.0 and dist1 <= 15.0:
-        return int(time_per_meter * dist1)
+    elif dist1 >= 1.0 and dist1 <= 10.0:
+        return int(time_per_meter * np.abs(dist1))
     else:
-        return int(time_per_meter * 15.0)
-
+        return int(time_per_meter * 10.0)
+    
 
 # ________________________________________________________________________________
 def pathCost(path):
@@ -353,7 +372,6 @@ def Nearest2(V, x):
         if (n1 < n):
             n = n1
     return i
-
 # ________________________________________________________________________________
 
 def gridValueMergedMap(mapData, Xp, distance=2):
@@ -385,8 +403,7 @@ def gridValueMergedMap(mapData, Xp, distance=2):
             return 100
     else:
         return 100
-    # else:
-    #     return -1.0
+
 # ________________________________________________________________________________
 def squareAreaCheck(data, index, width, distance=2):
     # now using the data to perform a square area check on the data for removing the invalid point
@@ -411,11 +428,16 @@ def gridValue(mapData, Xp):
         (floor((Xp[0]-Xstartx)/resolution))
 
     outData = squareAreaCheck(Data, index, width, distance=2)
+    # if max(outData,key=outData.count) != -1 and max(outData) != -1: 
+    #     return max(outData,key=outData.count)
+    # elif max(outData,key=outData.count) == -1 and max(outData) != -1:
+    #     return max(outData)
+    # else:
+    #     return 100
     if len(outData) > 1:
         return max(outData)
     else:
         return 100
-
 # ________________________________________________________________________________
 def checkSurroundingWall(mapData, Xp, dist_check):
     resolution = mapData.info.resolution
@@ -448,7 +470,7 @@ def checkSurroundingWall(mapData, Xp, dist_check):
     for i in range(0, len(pointList)):
         randomNumber1 = ((random.randint(-100, 100))/100.0)*dist_check
         randomNumber2 = ((random.randint(-100, 100))/100.0)*dist_check
-
+    
         index = (floor((pointList[i][1]+randomNumber1-Xstarty)/resolution)*width) + \
             (floor((pointList[i][0]+randomNumber2-Xstartx)/resolution))
         if int(index) < len(Data):
