@@ -290,36 +290,37 @@ def node():
 				if winner_id != -1:
 					# check if the goal is the same or not same
 					cond_goal       = True
-					cond_history    = True
-					cond_farAssign  = True
+# 					cond_history    = True
+# 					cond_farAssign  = True
 					for xi in range(0, len(invalidFrontier)):
 						if calculateLocationDistance(centroid_record[winner_id], invalidFrontier[xi]) < 0.1:
 							cond_goal = False
 							print(">> invalid goal detected. distance: %.3f" %(calculateLocationDistance(robot_assigned_goal[id_record[winner_id]]['goal'], invalidFrontier[xi])))
 							break
-					# check if history appear in other robot history
-					history = []
-					for xj in range(0,len(robot_namelist)):
-						history.append(robots[xj].getGoalHistory())
-					for xj in range(0, len(robot_namelist)):
-						#if the goal is assigned to other robot
-						if id_record[winner_id] != xj:
-							for xh in range(0, len(history[xj])):
-								distance_apart = calculateLocationDistance(centroid_record[winner_id], history[xj][xh])
-								if distance_apart <= (rp_metric/2.0):
-									cond_farAssign = False
-									# print('Goal [%f,%f] for robot %d repeated at other robot %d history' %(centroid_record[winner_id][0],centroid_record[winner_id][1], id_record[winner_id],xj))
-									break
-						# if the goal is repeated at own history
-						else:
-							for xh in range(0, len(history[xj])):
-								distance_apart = calculateLocationDistance(centroid_record[winner_id], history[xj][xh])
-								if distance_apart < 0.1:
-									remainingTime = ((robot_assigned_goal[xj]['time_start'] + robot_assigned_goal[xj]['time_thres']) - rospy.get_rostime().secs)
-									if remainingTime < (0.0-delay_after_assignement):
-										cond_history = False
-										print('history repeat the same goal assignment')
-										break
+
+# 					# check if history appear in other robot history
+# 					history = []
+# 					for xj in range(0,len(robot_namelist)):
+# 						history.append(robots[xj].getGoalHistory())
+# 					for xj in range(0, len(robot_namelist)):
+# 						#if the goal is assigned to other robot
+# 						if id_record[winner_id] != xj:
+# 							for xh in range(0, len(history[xj])):
+# 								distance_apart = calculateLocationDistance(centroid_record[winner_id], history[xj][xh])
+# 								if distance_apart <= (rp_metric/2.0):
+# 									cond_farAssign = False
+# 									# print('Goal [%f,%f] for robot %d repeated at other robot %d history' %(centroid_record[winner_id][0],centroid_record[winner_id][1], id_record[winner_id],xj))
+# 									break
+# 						# if the goal is repeated at own history
+# 						else:
+# 							for xh in range(0, len(history[xj])):
+# 								distance_apart = calculateLocationDistance(centroid_record[winner_id], history[xj][xh])
+# 								if distance_apart < 0.1:
+# 									remainingTime = ((robot_assigned_goal[xj]['time_start'] + robot_assigned_goal[xj]['time_thres']) - rospy.get_rostime().secs)
+# 									if remainingTime < (0.0-delay_after_assignement):
+# 										cond_history = False
+# 										print('history repeat the same goal assignment')
+# 										break
 					## check forthe goal assignment condition.
 					# also need to check whether the goal is repeated i nthe goal or not
 					if rospy.get_rostime().secs >= next_assign_time:
@@ -341,10 +342,10 @@ def node():
 					# print("cond_history:%s - cond_goal:%s - cond_farAssign:%s" %(cond_history,cond_goal,cond_farAssign))
 				else:
 					print('hello')
-			if cond_history and not cond_goal:
-				goal_repeated   = True
-				assigned_winner = id_record[winner_id]
-				faultyGoal      = centroid_record[winner_id]
+# 			if cond_history and not cond_goal:
+# 				goal_repeated   = True
+# 				assigned_winner = id_record[winner_id]
+# 				faultyGoal      = centroid_record[winner_id]
 
 
 			#-------------------------------------------------------------------------
