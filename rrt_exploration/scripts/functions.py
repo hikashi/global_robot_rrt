@@ -16,8 +16,8 @@ import random
 
 
 class robot:
-    def __init__(self, name, move_base_service, in_service, global_frame, base_link):
-        rospy.loginfo('setting up robot init for robot - ' + name)	
+    def __init__(self, name, move_base_service, plan_service, global_frame, base_link):
+        rospy.loginfo('setting up robot init for robot - ' + name)
         self.assigned_point = []
         self.goal_history = []
         self.name = name
@@ -25,10 +25,11 @@ class robot:
         self.goal  = MoveBaseGoal()
         self.start = PoseStamped()
         self.end   = PoseStamped()
-        #################################################################        
+        #################################################################
         self.global_frame = rospy.get_param('~global_frame', global_frame)
-        self.robot_frame = rospy.get_param('~robot_frame', base_link)
-        self.plan_service =  rospy.get_param('~plan_service', in_service)
+        self.robot_frame = rospy.get_param('~robot_frame', "map")
+        self.plan_service =  rospy.get_param('~plan_service', plan_service)
+        self.local_map =  rospy.get_param('~local_map', "map")
         # print("plan service" + in_service)
         self.listener = tf.TransformListener()
         self.listener.waitForTransform(self.global_frame, self.name+'/'+self.robot_frame, rospy.Time(0), rospy.Duration(10.0))
@@ -37,7 +38,7 @@ class robot:
         self.first_run = True
         self.movebase_status = 0
         self.sub       = rospy.Subscriber(name + "/odom", Odometry, self.odom_callback)
-        self.statussub = rospy.Subscriber(name + "/movebase/status", GoalStatusArray, self.movebase_status_callback)
+        self.statussub = rospy.Subscriber(name + "/move_base/status", GoalStatusArray, self.movebase_status_callback)
         ###################################################################
         cond = 0
         while cond == 0:
@@ -57,7 +58,7 @@ class robot:
         # print('waiting for the move_base service - %s' %(self.name+move_base_service))
         self.client = actionlib.SimpleActionClient('/' + self.name+move_base_service, MoveBaseAction)
         self.client.wait_for_server()
-        self.goal.target_pose.header.frame_id = self.global_frame
+        self.goal.target_pose.header.frame_id = self.name + "/" + self.local_map # self.global_frame
         self.goal.target_pose.header.stamp = rospy.Time.now()
         ######################################################################
         # print('waiting for the plan service -%s' %('/' + self.name+self.plan_service))
@@ -91,10 +92,10 @@ class robot:
         self.first_run = False
         self.previous_x = x
         self.previous_y = y
-    
+
     def movebase_status_callback(self, data):
         if len(data.status_list) > 0:
-            self.movebase_status = data.status_list.status
+            self.movebase_status = max([status.status for status in data.status_list])
         # uint8 PENDING=0
         # uint8 ACTIVE=1
         # uint8 PREEMPTED=2
@@ -104,7 +105,7 @@ class robot:
         # uint8 PREEMPTING=6
         # uint8 RECALLING=7
         # uint8 RECALLED=8
-    
+
     def get_movebase_status(self):
         return self.movebase_status
 
@@ -116,7 +117,7 @@ class robot:
         while cond == 0:
             try:
                 (trans, rot) = self.listener.lookupTransform(
-                    self.global_frame, self.name+'/'+self.robot_frame, rospy.Time(0))
+                    self.global_frame, self.name+'/'+'base_link', rospy.Time(0))  #+self.robot_frame, rospy.Time(0))
                 cond = 1
             except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
                 cond = 0
@@ -136,7 +137,7 @@ class robot:
                 return (transformed.pose.position.x, transformed.pose.position.y)
             except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
                 pass
-    
+
     def sendGoalTransformed(self, point):
         transform_point = self.transformPointToRobotFrame(point)
         self.goal.target_pose.pose.position.x = transform_point[0]
@@ -146,7 +147,7 @@ class robot:
         self.client.send_goal(self.goal)
         self.goal_history.append(array(point))
         self.assigned_point = array(point)
-        
+
     def sendGoal(self, point):
         # transform_point = self.transformPointToRobotFrame(point)
         self.goal.target_pose.pose.position.x = point[0]
@@ -157,12 +158,13 @@ class robot:
         self.goal_history.append(array(point))
         self.assigned_point = array(point)
 
-    def cancelGoal(self):      
+    def cancelGoal(self):
         point = self.getPosition()
         transform_point = self.transformPointToRobotFrame(point)
         self.goal.target_pose.pose.position.x = transform_point[0]
         self.goal.target_pose.pose.position.y = transform_point[1]
         self.goal.target_pose.pose.orientation.w = 1.0
+
         self.client.send_goal(self.goal)
         # self.client.sendGoalTransformed(self.goal)
         self.assigned_point = array(point)
@@ -182,13 +184,13 @@ class robot:
         # plan = self.make_plan(start=start, goal=end, tolerance=0.3)
         # tolerance should be defined in meter as according to the data, first try 0.04
         return plan.plan.poses
-    
+
     def setGoalHistory(self, point):
         self.goal_history.append(point)
 
     def getGoalHistory(self):
         return self.goal_history
-            
+
 # ________________________________________________________________________________
 
 
@@ -274,7 +276,7 @@ def relativePositionMetric(inputLoc, robotIndex, robots_position, distance_thres
         for i in range(0, len(robots_position)):
             if i != robotIndex:
                 inputList.append(robots_position[i])
-        # now calculate relative position for each of the robot in the list 
+        # now calculate relative position for each of the robot in the list
         distanceList = []
         for j in inputList:
             distanceList.append(calculateLocationDistance(j, inputLoc))
@@ -321,7 +323,7 @@ def calcDynamicTimeThreshold(curr_pos, goal_pos, time_per_meter):
         return int(time_per_meter * np.abs(dist1))
     else:
         return int(time_per_meter * 10.0)
-    
+
 
 # ________________________________________________________________________________
 def pathCost(path):
@@ -389,7 +391,7 @@ def gridValueMergedMap(mapData, Xp, distance=2):
 
     outData = squareAreaCheck(Data, index, width, distance)
     # knownAreaPercentage = outData.count   (0)/(np.power((distance*2)+1,2))
-    
+
     if len(outData) > 1:
         if 100 not in outData:
             if max(outData,key=outData.count) == -1 and max(outData) == 0:
@@ -429,7 +431,7 @@ def gridValue(mapData, Xp):
         (floor((Xp[0]-Xstartx)/resolution))
 
     outData = squareAreaCheck(Data, index, width, distance=2)
-    # if max(outData,key=outData.count) != -1 and max(outData) != -1: 
+    # if max(outData,key=outData.count) != -1 and max(outData) != -1:
     #     return max(outData,key=outData.count)
     # elif max(outData,key=outData.count) == -1 and max(outData) != -1:
     #     return max(outData)
@@ -471,7 +473,7 @@ def checkSurroundingWall(mapData, Xp, dist_check):
     for i in range(0, len(pointList)):
         randomNumber1 = ((random.randint(-100, 100))/100.0)*dist_check
         randomNumber2 = ((random.randint(-100, 100))/100.0)*dist_check
-    
+
         index = (floor((pointList[i][1]+randomNumber1-Xstarty)/resolution)*width) + \
             (floor((pointList[i][0]+randomNumber2-Xstartx)/resolution))
         if int(index) < len(Data):

@@ -192,7 +192,7 @@ float xr,yr;
 std::vector<float> x_rand,x_nearest,x_new;
 
 tf::TransformListener listener;
-int count = 1;
+
 // Main loop
 while (ros::ok()){
 

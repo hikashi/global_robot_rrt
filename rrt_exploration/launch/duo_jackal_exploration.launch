@@ -1,30 +1,33 @@
 <!-- Launch file for the rrt-detector and the assigner -->
 <launch>
   <!-- argument need to change for deployment-->
-  <arg name="global_map" value ="/merged/map"/>
-  <arg name="global_frame" value ="map"/>
+  <arg name="global_map" value ="/merged/map_processed"/>
+  <arg name="global_frame" value ="world"/>
   <arg name="global_costmap_topic" value="/move_base/global_costmap/costmap"/>
   <arg name="plan_service" value="/move_base/NavfnROS/make_plan"/>
   <arg name="robot_base_link" value="base_link"/>
   <arg name="move_base_service" value="/move_base"/>
-  <arg name="time_per_meter" value="8"/>
+  <arg name="time_per_meter" value="6"/>
 
   <!-- robot name space definition -->
-  <arg name="first_robot"  default="multijackal_01"/>
-  <arg name="second_robot" default="multijackal_02"/>
+  <arg name="first_robot"  default="multijackal_02"/>
+  <arg name="second_robot" default="multijackal_03"/>
 
   <!-- RRT common parameters -->
+  <arg name="info_radius" value="1.0"/>
   <arg name="info_multiplier" value="3.0"/>
-  <arg name="hysteresis_radius" value="5.0"/>
-  <arg name="hysteresis_gain" value="3.0"/>
+  <arg name="hysteresis_radius" value="4.0"/>
+  <arg name="hysteresis_gain" value="5.0"/>
   <arg name="costmap_clearing_threshold" value="50"/>
-  <arg name="time_per_meter" value="7.0"/>
-  <arg name="delay_after_assignement" value="5.0"/>   
-  <arg name="bandwith_cluster" value="0.5"/>   
-  <arg name="frequency" value="100"/>
+  <arg name="delay_after_assignement" value="2.4"/>
+  <arg name="goal_time_thres" value="6.0"/>
+  <arg name="frequency" value="50"/>
+  <arg name="bandwith_cluster" value="0.5"/>
   <arg name="detected_frontier" value="/detected_points"/>
   <arg name="filtered_frontier" value="/filtered_points"/>
-  <arg name="rd_metric" value="10.0"/>
+  <arg name="rd_metric" value="25.0"/>
+
+  <arg name="Geta" value="1.5"/>
 
   <!-- global RRT detector -->
   <node pkg="rrt_exploration" type="global_rrt_detector" name="global_rrt_detector" output="screen">
@@ -69,9 +72,9 @@
     <param name="base_link" value="$(arg robot_base_link)"/>
     <param name="move_base_service" value="$(arg move_base_service)"/>
     <param name="rd_metric" value="$(arg rd_metric)"/>
+    <param name="local_map" value="map"/>
 
     <remap from="/tf" to="/merged/tf" />
     <remap from="/tf_static" to="/merged/tf_static" />
   </node>
-
 </launch>

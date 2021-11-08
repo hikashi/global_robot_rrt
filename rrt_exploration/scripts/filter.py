@@ -47,7 +47,7 @@ def localMapCallBack(data):
     global localmaps, robot_namelist
     # search the topic based on the robot name arrangement suplied by the user
     topic_breakdownlist = str(data._connection_header['topic']).split('/')
-    
+
     for ib in range(0, len(robot_namelist)):
         if robot_namelist[ib] in topic_breakdownlist:
             indx = ib
@@ -83,7 +83,7 @@ def node():
     local_map_topic = rospy.get_param('~local_map', '/map')
     robot_frame = rospy.get_param('~robot_frame', 'base_link')
     cluster_bandwith = rospy.get_param('~cluster_bandwith', 0.5)
-    inv_frontier_topic= rospy.get_param('~invalid_frontier','/invalid_points')	
+    inv_frontier_topic= rospy.get_param('~invalid_frontier','/invalid_points')
 # -------------------------------------------
     robot_namelist = robot_namelist.split(',')
     litraIndx = len(robot_namelist)
@@ -121,7 +121,7 @@ def node():
             pass
 
     global_frame = "/"+mapData.header.frame_id
-	
+
     # adding in the try except for the tf tranformer to solve the issue
     try:
         tfLisn = tf.TransformListener()
@@ -139,7 +139,7 @@ def node():
     pub2 = rospy.Publisher('centroids', Marker, queue_size=10)
     filterpub = rospy.Publisher('filtered_points', PointArray, queue_size=10)
 
-    
+
 
     rospy.loginfo("the map and global costmaps are received")
 
@@ -262,12 +262,14 @@ def node():
                 cond3 = True
 	    # information gain function
             infoGain = informationGain(mapData, [centroids[z][0], centroids[z][1]], info_radius*0.5)
-	
-            if (cond1 or cond2 or cond3 or cond4 or infoGain < 0.2):
+
+            # if (cond1 or cond2 or cond3 or cond4 or infoGain < 0.2):
+            if (cond1 or cond2 or cond3 or infoGain < 0.2):
+            #if (cond1 or cond2 or (infoGain < 0.2)):
                 centroids = delete(centroids, (z), axis=0)
-                z = z-1 
+                z = z-1
             z += 1
-        # rospy.loginfo("Filtered: %d invalid frontiers " %(z))	
+        # rospy.loginfo("Filtered: %d invalid frontiers " %(z))
 # -------------------------------------------------------------------------
 # publishing
         arraypoints.points = []

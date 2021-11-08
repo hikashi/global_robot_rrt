@@ -66,19 +66,8 @@ std::vector<float> Steer(  std::vector<float> x_nearest , std::vector<float> x_r
   return x_new;
 }
 
-  // square area check function
-std::vector<signed char> squareAreaCheck(std::vector<signed char> data, int index, int width, int distance)
-{
-  std::vector<signed char> dataOutList;
-  for(int j=(-1*distance); j<(distance+1); j=j+1){
-    for(int i=index+(width*j)-distance; i<(index+(width*j)+distance); i=i+1){
-      if(i < data.size()){
-        dataOutList.push_back(data[int(i)]);
-      }
-    }
-  }
-  return dataOutList;
-}
+
+
 
 
 //gridValue function
@@ -94,18 +83,8 @@ int gridValue(nav_msgs::OccupancyGrid &mapData,std::vector<float> Xp)
   //returns grid value at "Xp" location
   //map data:  100 occupied      -1 unknown       0 free
   float indx=(  floor((Xp[1]-Xstarty)/resolution)*width)+( floor((Xp[0]-Xstartx)/resolution) );
-  // int out;
-  // out=Data[int(indx)];
-
-  // add in the processing value for the grid data output
-
-  std::vector<signed char> dataOutList;
-  dataOutList = squareAreaCheck(Data, indx, width, 2);
-  // now processing the data output list
-  int out = 100;
-  if(dataOutList.size() > 1){
-    out = *max_element(dataOutList.begin(), dataOutList.end());
-  }
+  int out;
+  out=Data[int(indx)];
   return out;
 }
 
@@ -148,3 +127,44 @@ int ObstacleFree(std::vector<float> xnear, std::vector<float> &xnew, nav_msgs::O
   }
   return out;
 }
+ 
+
+
+     
+   
+
+
+  
+ 
+ 
+ 
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
