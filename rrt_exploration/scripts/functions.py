@@ -441,60 +441,15 @@ def gridValue(mapData, Xp):
         return max(outData)
     else:
         return 100
+# ____________________________________________
+# ____________________________________
+def getHigestIndex(revenueList, attempt):
+    # get the maximum index number 
+    if len(revenueList) > 0:
+        tempList = sorted(revenueList, reverse=True)
+        maxValue = tempList[attempt]
+        index = revenueList.index(maxValue)
+        return index
+    else:
+        return -1
 # ________________________________________________________________________________
-def checkSurroundingWall(mapData, Xp, dist_check):
-    resolution = mapData.info.resolution
-    Xstartx = mapData.info.origin.position.x
-    Xstarty = mapData.info.origin.position.y
-
-    width = mapData.info.width
-    Data = mapData.data
-
-    pointList = []
-    pointList.append([Xp[0]-dist_check, Xp[1]])
-    pointList.append([Xp[0]+dist_check, Xp[1]])
-    pointList.append([Xp[0], Xp[1]-dist_check])
-    pointList.append([Xp[0], Xp[1]+dist_check])
-    pointList.append([Xp[0]-dist_check, Xp[1]-dist_check])
-    pointList.append([Xp[0]-dist_check, Xp[1]+dist_check])
-    pointList.append([Xp[0]+dist_check, Xp[1]-dist_check])
-    pointList.append([Xp[0]+dist_check, Xp[1]+dist_check])
-    pointList.append([Xp[0]-dist_check, Xp[1]-(dist_check/2.0)])
-    pointList.append([Xp[0]-dist_check, Xp[1]+(dist_check/2.0)])
-    pointList.append([Xp[0]+dist_check, Xp[1]-(dist_check/2.0)])
-    pointList.append([Xp[0]+dist_check, Xp[1]+(dist_check/2.0)])
-    pointList.append([Xp[0]-(dist_check/2.0), Xp[1]-dist_check])
-    pointList.append([Xp[0]-(dist_check/2.0), Xp[1]+dist_check])
-    pointList.append([Xp[0]+(dist_check/2.0), Xp[1]-dist_check])
-    pointList.append([Xp[0]+(dist_check/2.0), Xp[1]+dist_check])
-
-
-    indexList = []
-    for i in range(0, len(pointList)):
-        randomNumber1 = ((random.randint(-100, 100))/100.0)*dist_check
-        randomNumber2 = ((random.randint(-100, 100))/100.0)*dist_check
-
-        index = (floor((pointList[i][1]+randomNumber1-Xstarty)/resolution)*width) + \
-            (floor((pointList[i][0]+randomNumber2-Xstartx)/resolution))
-        if int(index) < len(Data):
-            indexList.append(Data[int(index)])
-        else:
-            indexList.append(100)
-
-    # now checking the pair list.list()
-    sortedList = sorted(indexList, reverse=True)
-    sumNum = sortedList[0] + sortedList[1] + sortedList[2] + sortedList[3]
-
-    wallDetected = False
-    if sumNum > 190:
-        wallDetected = True
-    # print('-------------------------------')
-    # print(wallDetected)
-    # print(sortedList)
-    # print('the total number: %d' %sumNum)
-    # print('-------------------------------')
-    # print(Xp)
-    # print(pointList)
-    # print(indexList)
-    # print(wallDetected)
-    return wallDetected
