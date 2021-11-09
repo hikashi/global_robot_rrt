@@ -9,7 +9,7 @@ from nav_msgs.msg import OccupancyGrid
 from geometry_msgs.msg import PointStamped
 import tf
 from numpy import array, vstack, delete, round
-from functions import gridValue, informationGain, checkSurroundingWall, gridValueMergedMap
+from functions import gridValue, informationGain, gridValueMergedMap
 from sklearn.cluster import MeanShift
 from rrt_exploration.msg import PointArray, invalidArray
 
@@ -24,9 +24,6 @@ invalidFrontier=[]
 
 def callBack(data, args):
     global frontiers
-#     transformedPoint = args[0].transformPoint(args[1], data)
-#     x = [array([transformedPoint.point.x, transformedPoint.point.y])]
-#   uncomment if required for transformation.
     x = [array([data.point.x, data.point.y])]
     if len(frontiers) > 0:
         frontiers = vstack((frontiers, x))
@@ -45,7 +42,6 @@ def invalidCallBack(data):
 
 def localMapCallBack(data):
     global localmaps, robot_namelist
-    # search the topic based on the robot name arrangement suplied by the user
     topic_breakdownlist = str(data._connection_header['topic']).split('/')
 
     for ib in range(0, len(robot_namelist)):
@@ -55,7 +51,6 @@ def localMapCallBack(data):
 
 def globalCostMapCallBack(data):
     global globalmaps, robot_namelist
-    # search the topic based on the robot name arrangement suplied by the user
     topic_breakdownlist = str(data._connection_header['topic']).split('/')
     for ia in range(0, len(robot_namelist)):
         if robot_namelist[ia] in topic_breakdownlist:
@@ -163,14 +158,14 @@ def node():
 
     points.pose.orientation.w = 1.0
 
-    points.scale.x = 0.5
-    points.scale.y = 0.5
+    points.scale.x = 0.8
+    points.scale.y = 0.8
 
     points.color.r = 255.0/255.0
     points.color.g = 255.0/255.0
     points.color.b = 0.0/255.0
 
-    points.color.a = 1
+    points.color.a = 0.8
     points.lifetime = rospy.Duration()
 
     p = Point()
@@ -193,13 +188,13 @@ def node():
 
     points_clust.pose.orientation.w = 1.0
 
-    points_clust.scale.x = 0.5
-    points_clust.scale.y = 0.5
+    points_clust.scale.x = 0.8
+    points_clust.scale.y = 0.8
     points_clust.color.r = 0.0/255.0
     points_clust.color.g = 255.0/255.0
     points_clust.color.b = 0.0/255.0
 
-    points_clust.color.a = 1
+    points_clust.color.a = 0.8
     points_clust.lifetime = rospy.Duration()
 
     temppoint = PointStamped()
@@ -235,8 +230,7 @@ def node():
         while z < len(centroids):
             cond1 = False
             cond2 = False
-	    cond3 = False
-            cond4 = False
+            cond3 = False
             temppoint.point.x = centroids[z][0]
             temppoint.point.y = centroids[z][1]
 
@@ -249,8 +243,8 @@ def node():
                 cond1 = (gridValue(globalmaps[i], x) > threshold) or cond1
                 for jj in range(0, len(invalidFrontier)):
                     try:
-			    if transformedPoint.point.x == invalidFrontier[jj][0] and transformedPoint.point.y == invalidFrontier[jj][1]:
-				cond2 = True
+                        if transformedPoint.point.x == invalidFrontier[jj][0] and transformedPoint.point.y == invalidFrontier[jj][1]:
+                            cond2 = True
                     except:
                         print(" point -> %d got problem with the following point: [%f %f]" %(jj, temppoint.point.x, temppoint.point.y))
                 localMapValue = gridValueMergedMap(localmaps[i], x)
@@ -260,16 +254,13 @@ def node():
             mapValue = gridValueMergedMap(mapData, [centroids[z][0], centroids[z][1]])
             if mapValue > 90: # if the map value is unknown or obstacle
                 cond3 = True
-	    # information gain function
+            # information gain function
             infoGain = informationGain(mapData, [centroids[z][0], centroids[z][1]], info_radius*0.5)
 
-            # if (cond1 or cond2 or cond3 or cond4 or infoGain < 0.2):
             if (cond1 or cond2 or cond3 or infoGain < 0.2):
-            #if (cond1 or cond2 or (infoGain < 0.2)):
                 centroids = delete(centroids, (z), axis=0)
                 z = z-1
             z += 1
-        # rospy.loginfo("Filtered: %d invalid frontiers " %(z))
 # -------------------------------------------------------------------------
 # publishing
         arraypoints.points = []
