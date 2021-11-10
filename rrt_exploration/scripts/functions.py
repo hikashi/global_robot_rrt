@@ -37,7 +37,7 @@ class robot:
         self.total_distance = 0
         self.first_run = True
         self.movebase_status = 0
-        self.sub       = rospy.Subscriber(name + "/odom", Odometry, self.odom_callback)
+        self.sub       = rospy.Subscriber(name + "/odometry/filtered", Odometry, self.odom_callback)
         self.statussub = rospy.Subscriber(name + "/move_base/status", GoalStatusArray, self.movebase_status_callback)
         ###################################################################
         cond = 0
