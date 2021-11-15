@@ -37,7 +37,7 @@ class robot:
         self.total_distance = 0
         self.first_run = True
         self.movebase_status = 0
-        self.sub       = rospy.Subscriber(name + "/odometry/filtered", Odometry, self.odom_callback)
+        self.sub       = rospy.Subscriber(name + "/odometry/tracking_filtered", Odometry, self.odom_callback)
         self.statussub = rospy.Subscriber(name + "/move_base/status", GoalStatusArray, self.movebase_status_callback)
         ###################################################################
         cond = 0
@@ -82,6 +82,7 @@ class robot:
             except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
                 rospy.sleep(0.11)
                 cond == 0
+                rospy.sleep(0.5) # sleep to combat the spam request to ros network
 
         if self.first_run == True:
             self.previous_x = trans[0]
@@ -121,7 +122,8 @@ class robot:
                 (trans, rot) = self.listener.lookupTransform(
                     self.global_frame, self.name+'/'+'base_link', rospy.Time(0))  #+self.robot_frame, rospy.Time(0))
                 cond = 1
-            except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
+            except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException) as e:
+                print(e)
                 cond = 0
                 rospy.sleep(0.11)
         self.position = array([trans[0], trans[1]])

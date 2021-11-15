@@ -46,16 +46,16 @@ def node():
 	hysteresis_radius        = rospy.get_param('~hysteresis_radius',3.0)			#at least as much as the laser scanner range
 	hysteresis_gain          = rospy.get_param('~hysteresis_gain',2.0)				#bigger than 1 (biase robot to continue exploring current region
 	frontiers_topic          = rospy.get_param('~frontiers_topic','/filtered_points')
-	inv_points_topic         = rospy.get_param('~invalid_frontier','/invalid_points')	
-	inv_frontier_topic       = rospy.get_param('~invalid_centroids','/invalid_centroids')	
+	inv_points_topic         = rospy.get_param('~invalid_frontier','/invalid_points')
+	inv_frontier_topic       = rospy.get_param('~invalid_centroids','/invalid_centroids')
 	time_per_meter           = rospy.get_param('~time_per_meter',6.0)
-	message_time_interval    = rospy.get_param('~message_time_interval',2.0)
+	message_time_interval    = rospy.get_param('~message_time_interval',1.5)
 	invalid_distance         = rospy.get_param('~invalid_distance',0.5)
 	robot_namelist           = rospy.get_param('~robot_namelist', "robot1")
 	delay_after_assignement  = rospy.get_param('~delay_after_assignement',2.4)
 	invalid_distance         = rospy.get_param('~invalid_distance',0.5)
 	rp_metric_distance       = rospy.get_param('~rp_metric_distance',10.0)
-	start_delay              = rospy.get_param('~start_delay',3.0)
+	start_delay              = rospy.get_param('~start_delay',10.0)
 	rateHz                   = rospy.get_param('~rate',100)
 	debugFlag1               = rospy.get_param('~debugFlag1',False)
 	debugFlag2               = rospy.get_param('~debugFlag2',False)
@@ -208,13 +208,20 @@ def node():
 		robot_goal_cancel = []
 #-------------------------------------------------------------------------
 #Get information gain for each frontier point
+		# rospy.loginfo("start processing for the information gain for each robot")
 		infoGain=[]
 		for ip in range(0,len(centroids)):
 			infoGain.append(informationGain(mapData,[centroids[ip][0],centroids[ip][1]],info_radius)*info_multiplier)
 #-------------------------------------------------------------------------
 #get dicount and update informationGain
+		# start2 = time.time()
 		for i in nb+na:
-			infoGain=discount2(mapData,robot_assigned_goal[i]['lastgoal'],centroids,infoGain,info_radius)
+			# rospy.loginfo("start reducing info gain for robot %s" %(robot_namelist[i]))
+			# start = time.time()
+			infoGain=discount2(mapData,robot_assigned_goal[i]['goal'],centroids,infoGain,info_radius)
+			# rospy.loginfo("done reducing info gain for robot %s use time: %.6fs" %(robot_namelist[i], (time.time()-start)))
+
+		# rospy.loginfo(">>>>>>> done reducing info gain for all robots: %.5fs" %(time.time()-start2))
 #-------------------------------------------------------------------------
 		revenue_record=[]
 		centroid_record=[]
@@ -294,6 +301,7 @@ def node():
 			random.shuffle(robotListTemp)
 			if rospy.get_rostime().secs >= next_assign_time:
 				for xxx in robotListTemp:
+					rospy.loginfo("now processing the robot assignment for robot %s" %(robot_namelist[xxx]))
 					'''
 					the idea here allocate retry function for each of the next highest revenue frontier.
 					for Available robot, there will be no condition imposed to allocate the revenue when compared to the Busy robot.
