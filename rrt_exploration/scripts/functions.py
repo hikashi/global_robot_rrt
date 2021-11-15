@@ -50,6 +50,7 @@ class robot:
                 cond = 1
             except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
                 cond == 0
+                rospy.sleep(0.11)
         #####################################################################
         self.position = array([trans[0], trans[1]])
         self.previous_x = 0
@@ -79,6 +80,7 @@ class robot:
                     self.global_frame, data.header.frame_id, rospy.Time(0))
                 cond = 1
             except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
+                rospy.sleep(0.11)
                 cond == 0
 
         if self.first_run == True:
@@ -121,6 +123,7 @@ class robot:
                 cond = 1
             except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
                 cond = 0
+                rospy.sleep(0.11)
         self.position = array([trans[0], trans[1]])
         return self.position
 
@@ -136,6 +139,7 @@ class robot:
                 transformed = self.listener.transformPose(self.name + '/' + self.robot_frame, point)
                 return (transformed.pose.position.x, transformed.pose.position.y)
             except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
+                rospy.sleep(0.11)
                 pass
 
     def sendGoalTransformed(self, point):
@@ -441,7 +445,6 @@ def gridValue(mapData, Xp):
         return max(outData)
     else:
         return 100
-# ____________________________________________
 # ____________________________________
 def getHigestIndex(revenueList, attempt):
     # get the maximum index number 
