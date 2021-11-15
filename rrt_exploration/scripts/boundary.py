@@ -33,7 +33,7 @@ def node():
     topicInput = rospy.get_param('~topicInput', '/clicked_point') # the number of the boundary point going to be created
     topicOutput = rospy.get_param('~topicOutput', '/exploration_boundary') # specify the topic which the node is going to published into the list
     frequency = rospy.get_param('~frequency', 1.0)     # number of the rate listening to the ros param
-
+    timeInterval = rospy.get_param('~timeInterval', 2.0)     # number of the rate listening to the ros param
     # preprocess some of the data
     rate = rospy.Rate(frequency)
     dataLength = n_point
