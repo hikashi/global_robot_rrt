@@ -35,8 +35,8 @@
     <param name="eta" value="$(arg Geta)"/>
     <param name="map_topic" value="$(arg global_map)"/>
 
-    <remap from="/tf" to="/merged/tf" />
-    <remap from="/tf_static" to="/merged/tf_static" />
+    <remap from="/tf" to="/merged_desktop/tf" />
+    <remap from="/tf_static" to="/merged_desktop/tf_static" />
   </node>
 
   <!-- filtering node -->
@@ -51,8 +51,8 @@
       <param name="local_map" value="/map"/>
       <param name="bandwith_cluster" value="$(arg bandwith_cluster)"/>
 
-      <remap from="/tf" to="/merged/tf" />
-      <remap from="/tf_static" to="/merged/tf_static" />
+      <remap from="/tf" to="/merged_desktop/tf" />
+      <remap from="/tf_static" to="/merged_desktop/tf_static" />
     </node>
 
 
@@ -75,8 +75,8 @@
     <param name="rd_metric" value="$(arg rd_metric)"/>
     <param name="local_map" value="map"/>
 
-    <remap from="/tf" to="/merged/tf" />
-    <remap from="/tf_static" to="/merged/tf_static" />
+    <remap from="/tf" to="/merged_desktop/tf" />
+    <remap from="/tf_static" to="/merged_desktop/tf_static" />
   </node>
 
 
